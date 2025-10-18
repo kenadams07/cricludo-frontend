@@ -52,6 +52,7 @@ function transformGenericStatsForChart(
   stats: GenericStatsByPeriod,
   timeRange: "90d" | "30d" | "7d"
 ) {
+  if(stats == null) return [];
   const periodKey =
     timeRange === "90d" ? "daily" : timeRange === "30d" ? "monthly" : "yearly";
 

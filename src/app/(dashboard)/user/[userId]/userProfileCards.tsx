@@ -23,7 +23,7 @@ import {
 } from "@tabler/icons-react";
 
 import { format, formatDistanceToNow } from "date-fns";
-import { capitalize, convertSecondsToHHMMSS } from "@/lib/utils";
+import { capitalize, formatPlaytime } from "@/lib/utils";
 
 interface UserProfileProps {
   user: {
@@ -51,6 +51,7 @@ interface UserProfileProps {
 }
 
 export function UserProfileCard({ user }: UserProfileProps) {
+  console.log("UserProfileCard user:", user);
   const winRate =
     user?.totalGamesJoined > 0 && typeof user?.wins === "number"
       ? ((user.wins / user.totalGamesJoined) * 100).toFixed(1)
@@ -179,7 +180,7 @@ export function UserProfileCard({ user }: UserProfileProps) {
       {/* Account Info */}
       <Card className="shadow-md transition hover:shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold">Account Info</CardTitle>
+          <CardTitle className="text-xl font-semibold">Account Infos</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           {/* Active Status or Last Login */}
@@ -218,7 +219,7 @@ export function UserProfileCard({ user }: UserProfileProps) {
               Time Spent (HH:MM:SS)
             </span>
             <span className="font-semibold text-base">
-              {convertSecondsToHHMMSS(totalSeconds)}
+              {formatPlaytime(totalSeconds/1000)}
             </span>
           </div>
         </CardContent>

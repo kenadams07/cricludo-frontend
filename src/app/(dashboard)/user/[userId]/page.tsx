@@ -13,6 +13,7 @@ import { useAuthStore } from "@/store/authStore";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
 import { mutate } from "swr";
 import { API_URL } from "@/lib/config";
+import { formatPlaytime } from "@/lib/utils";
 
 const gameSessionSchema = z.object({
   id: z.string(),
@@ -117,7 +118,7 @@ const gameSessionColumns: ColumnDef<GameSession>[] = [
   {
     accessorKey: "duration",
     header: "Duration (ms)",
-    cell: ({ row }) => <div>{row.original.duration || ""}</div>,
+    cell: ({ row }) => <div>{`${formatPlaytime(row?.original?.duration/1000)}` || ""}</div>,
   },
   {
     accessorKey: "endReason",
@@ -178,7 +179,7 @@ export default function userDashboard() {
               <LoginHistoryCard logins={userData?.loginHistory || []} />
             </div>
           </div>
-
+          
           {userData?.userMatches && (
             <DataTable
               data={userData?.userMatches || []}

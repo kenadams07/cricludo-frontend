@@ -14,7 +14,7 @@ import {
 } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import UserAvatar from "@/components/user-avatar";
-import { convertSecondsToHHMMSS } from "@/lib/utils";
+import { formatPlaytime } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 
@@ -142,7 +142,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     cell: ({ row }) => {
       const totalSeconds = Number(row.original.totalTimeSpent) ?? 0;
 
-      return <div>{convertSecondsToHHMMSS(totalSeconds)}</div>;
+      return <div>{formatPlaytime(totalSeconds/1000)}</div>;
     },
   },
 ];
