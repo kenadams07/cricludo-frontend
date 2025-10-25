@@ -55,7 +55,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   {
     accessorKey: "email",
     header: "Email",
-    cell: ({ row }) => <div>{row.original.email}</div>,
+    cell: ({ row }) => <div className={`${row?.original?.isGuest ? "text-red-500":""}`}>{row?.original?.email || row?.original?.isGuest && 'Not available for guest'}</div>,
   },
   {
     accessorKey: "active",
@@ -103,6 +103,15 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
               <span>Agent</span>
             </Badge>
           )}
+          {!isVIP && !isGuest && !isAgent && (
+            <Badge
+              variant="outline"
+              className="flex bg-green-400 items-center space-x-1"
+            >
+              <IconShield className="h-4 w-4 text-black-500" />
+              <span>Normal User</span>
+            </Badge>
+          )}
         </div>
       );
     },
@@ -140,26 +149,29 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     accessorKey: "totalTimeSpent",
     header: "Time Spent (HH:mm:ss)",
     cell: ({ row }) => {
-      const totalSeconds = Number(row.original.totalTimeSpent) ?? 0;
-
-      return <div>{formatPlaytime(totalSeconds/1000)}</div>;
+      const TimeSpendInSeconds = Number(row?.original?.totalTimeSpent) ?? 0;
+      const timeSpend = formatPlaytime(TimeSpendInSeconds/1000);
+      return <div className={`${TimeSpendInSeconds > 1000 ? "text-green-500":"text-red-500"}`}>{timeSpend}</div>;
     },
   },
 ];
 
 export default function DashboardPage() {
   const userTableData = useAnalysisStore((state) => state.userTableData);
-  const chartData = useAnalysisStore((state) => state.chartData);
+  let chartData = useAnalysisStore((state) => state.chartData);
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
 
   const setTitle = useAuthStore((t) => t.setTitle);
+
   useEffect(() => {
     setTitle("Dashboard Overview");
     if (user.userType === "agent") {
       router.push(`user/${user?.user?.id || ""}`);
     }
   }, [setTitle, user]);
+
+console.log("chart data:", chartData);
 
   return (
     <div className="flex flex-1 flex-col">

@@ -125,15 +125,20 @@ export function DataTable({
   userType?: string;
   reFetchData?: () => void;
 }) {
+
+  console.log("DataTable rendered with data:", initialData);
   const [data, setData] = React.useState(() => initialData);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   });
+  // settting initial data when it changes
   React.useEffect(() => {
     setData(initialData);
     paginationConfig && setPagination(paginationConfig);
   }, [initialData]);
+
+  
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -207,6 +212,9 @@ export function DataTable({
     return Array.from(unique);
   }, [data, userTypeColumn]);
 
+
+  console.log("table data:", table);
+
   return (
     <Tabs
       defaultValue="outline"
@@ -225,6 +233,8 @@ export function DataTable({
             </>
           )}
           </div>
+
+          {/* customize and filter */}
         <div className="flex justify-end gap-2 px-4 lg:px-6">
           <div className="flex items-center gap-2">
             <DropdownMenu>
@@ -357,7 +367,9 @@ export function DataTable({
             </Table>
           </DndContext>
         </div>
-        <div className="flex items-center justify-between px-4">
+  
+        {/* pagination here if needed */}
+              <div className="flex items-center justify-between px-4">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
@@ -434,6 +446,8 @@ export function DataTable({
             </div>
           </div>
         </div>
+
+
       </TabsContent>
       <TabsContent
         value="past-performance"
