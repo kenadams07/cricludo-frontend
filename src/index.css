@@ -1,9 +1,9 @@
 /* CRIC LUDO Global Color Variables */
 :root {
    /* Primary Brand Colors */
-   --cric-primary: #ff8c00;
-   --cric-secondary: #ff4500;
-   --cric-accent: #ffa500;
+   --cric-primary: #ff0000;
+   --cric-secondary: #020000;
+   --cric-accent: #ff0000;
 
    /* Background Colors */
    --cric-bg-primary: #0a0a0a;
@@ -41,17 +41,17 @@
    /* Gradient Backgrounds */
    --cric-gradient-primary: linear-gradient(
       135deg,
-      #ff8c00 0%,
-      #ff4500 50%,
-      #ffa500 100%
+      #ff0000 0%,
+      #3e1d1d 50%,
+      #ff0000 100%
    );
    --cric-gradient-secondary: linear-gradient(
       135deg,
-      #ffa500 0%,
-      #ff8c00 50%,
-      #ff4500 100%
+      #ff0000 0%,
+      #e60b0b 50%,
+      #ff0000 100%
    );
-   --cric-gradient-text: linear-gradient(45deg, #ff8c00, #ff4500, #ffa500);
+   --cric-gradient-text: linear-gradient(45deg, #ff0000, #e60b0b, #ff0000);
 
    /* Stadium Lighting Effects */
    --cric-lighting-primary: radial-gradient(
