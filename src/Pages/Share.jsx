@@ -5,6 +5,8 @@ const Share = () => {
    const [searchParams] = useSearchParams()
    const [showAppStoreButton, setShowAppStoreButton] = useState(false)
    const [deviceInfo, setDeviceInfo] = useState({ isAndroid: false, isIOS: false })
+   const [statusMessage, setStatusMessage] = useState("Opening CRIC LUDO...")
+   const [appOpened, setAppOpened] = useState(false)
 
    const detectDevice = () => {
       const userAgent = navigator.userAgent.toLowerCase()
@@ -15,22 +17,42 @@ const Share = () => {
       return { isAndroid, isIOS }
    }
 
-   const attemptDeepLink = (userId) => {
-      const deepLinkUrl = `cricludo://share?id=${userId || ""}`
-
+   const attemptDeepLink = (roomId) => {
+      const deepLinkUrl = `cricludo://share?id=${roomId || ""}`
       console.log("Attempting deep link:", deepLinkUrl)
 
-      const iframe = document.createElement("iframe")
-      iframe.style.display = "none"
-      iframe.src = deepLinkUrl
-      document.body.appendChild(iframe)
+      // Method 1: Try window.location
+      try {
+         window.location.href = deepLinkUrl
+      } catch (error) {
+         console.log("Window location method failed:", error)
+      }
 
+      // Method 2: Try creating a hidden iframe
       setTimeout(() => {
-         document.body.removeChild(iframe)
+         const iframe = document.createElement("iframe")
+         iframe.style.display = "none"
+         iframe.src = deepLinkUrl
+         document.body.appendChild(iframe)
+
+         setTimeout(() => {
+            if (document.body.contains(iframe)) {
+               document.body.removeChild(iframe)
+            }
+         }, 1000)
+      }, 500)
+
+      // Method 3: Try creating a temporary link
+      setTimeout(() => {
+         const link = document.createElement("a")
+         link.href = deepLinkUrl
+         link.style.display = "none"
+         document.body.appendChild(link)
+         link.click()
+         document.body.removeChild(link)
       }, 1000)
    }
 
- 
    const getAppStoreUrl = () => {
       if (deviceInfo.isAndroid) {
          return "https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo"
@@ -41,9 +63,29 @@ const Share = () => {
       }
    }
 
-
    const getButtonText = () => {
-      return deviceInfo.isAndroid ? "Open in Play Store" : "Open in App Store"
+      if (appOpened) {
+         return "Open CRIC LUDO Again"
+      }
+      return deviceInfo.isAndroid ? "Open CRIC LUDO" : "Open CRIC LUDO"
+   }
+
+   const handleAppStoreClick = () => {
+      if (appOpened) {
+         // Try to open the app again
+         const roomId = searchParams.get("id")
+         attemptDeepLink(roomId)
+         setStatusMessage("Opening CRIC LUDO...")
+         setShowAppStoreButton(false)
+
+         setTimeout(() => {
+            setShowAppStoreButton(true)
+            setStatusMessage("Tap to open CRIC LUDO")
+         }, 2000)
+      } else {
+         // Open Play Store
+         window.open(getAppStoreUrl(), "_blank")
+      }
    }
 
    useEffect(() => {
@@ -51,55 +93,76 @@ const Share = () => {
       console.log("User Agent:", navigator.userAgent)
       console.log("URL:", window.location.href)
 
-    
       const device = detectDevice()
       setDeviceInfo(device)
 
-     
-      const userId = searchParams.get("id")
-      if (!userId) {
-         console.error("No user ID provided in URL")
+      const roomId = searchParams.get("id")
+      if (!roomId) {
+         console.error("No room ID provided in URL")
          return
       }
 
-      console.log("User ID:", userId)
+      console.log("Room ID:", roomId)
 
-    
-      attemptDeepLink(userId)
+      // Attempt deep link immediately
+      attemptDeepLink(roomId)
 
-      const timer = setTimeout(() => {
-         setShowAppStoreButton(true)
-         console.log("Showing app store button")
-      }, 1000)
+      // Set up detection for app opening
+      let appDetectionTimer
+      let fallbackTimer
 
- 
       const handleVisibilityChange = () => {
          if (document.hidden) {
             console.log("Page became hidden - app might have opened")
+            setAppOpened(true)
+            setStatusMessage("CRIC LUDO opened successfully!")
+            clearTimeout(fallbackTimer)
          } else {
             console.log("Page became visible - app might not have opened")
          }
       }
 
-    
       const handleBlur = () => {
          console.log("Window lost focus - app might have opened")
+         setAppOpened(true)
+         setStatusMessage("CRIC LUDO opened successfully!")
+         clearTimeout(fallbackTimer)
       }
 
+      const handlePageHide = () => {
+         console.log("Page hide event - app opened")
+         setAppOpened(true)
+         setStatusMessage("CRIC LUDO opened successfully!")
+         clearTimeout(fallbackTimer)
+      }
+
+      // Listen for app opening events
       document.addEventListener("visibilitychange", handleVisibilityChange)
       window.addEventListener("blur", handleBlur)
+      window.addEventListener("pagehide", handlePageHide)
 
-   
+      // Fallback: Show app store button after 3 seconds
+      fallbackTimer = setTimeout(() => {
+         if (!appOpened) {
+            setShowAppStoreButton(true)
+            setStatusMessage("Tap to open CRIC LUDO")
+            console.log("Showing fallback button")
+         }
+      }, 3000)
+
+      // Cleanup
       return () => {
-         clearTimeout(timer)
+         clearTimeout(fallbackTimer)
+         clearTimeout(appDetectionTimer)
          document.removeEventListener("visibilitychange", handleVisibilityChange)
          window.removeEventListener("blur", handleBlur)
+         window.removeEventListener("pagehide", handlePageHide)
       }
    }, [searchParams])
 
-   const userId = searchParams.get("id")
+   const roomId = searchParams.get("id")
 
-   if (!userId) {
+   if (!roomId) {
       return (
          <div className='share-page'>
             <div className='container'>
@@ -109,7 +172,7 @@ const Share = () => {
                   </div>
                   <h1>Invalid Share Link</h1>
                   <p className='error-message'>
-                     No user ID provided in the URL. Please check the link and try again.
+                     No room ID provided in the URL. Please check the link and try again.
                   </p>
                   <div className='error-actions'>
                      <a href='/' className='btn btn-primary'>
@@ -131,7 +194,7 @@ const Share = () => {
                </div>
                <h1 className='title'>CRIC LUDO</h1>
                <p className='subtitle' id='statusText'>
-                  {showAppStoreButton ? "App not installed?" : "Opening CRIC LUDO..."}
+                  {statusMessage}
                </p>
 
                {!showAppStoreButton && (
@@ -139,14 +202,9 @@ const Share = () => {
                )}
 
                {showAppStoreButton && (
-                  <a
-                     href={getAppStoreUrl()}
-                     className='app-store-button'
-                     target='_blank'
-                     rel='noopener noreferrer'
-                  >
+                  <button onClick={handleAppStoreClick} className='app-store-button'>
                      {getButtonText()}
-                  </a>
+                  </button>
                )}
             </div>
          </div>
