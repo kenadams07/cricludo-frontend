@@ -19,20 +19,37 @@ const Share = () => {
 
    const attemptDeepLink = (roomId) => {
       const deepLinkUrl = `cricludo://share?id=${roomId || ""}`
-      console.log("Attempting deep link:", deepLinkUrl)
+      const androidIntentUrl = `intent://share?id=${
+         roomId || ""
+      }#Intent;scheme=cricludo;package=com.nineXTechnology.CricLudo;end`
+      const playStoreUrl = `https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo`
 
-      // Method 1: Try window.location
-      try {
-         window.location.href = deepLinkUrl
-      } catch (error) {
-         console.log("Window location method failed:", error)
+      console.log("Attempting deep link:", deepLinkUrl)
+      console.log("Android Intent URL:", androidIntentUrl)
+
+      // Method 1: Try Android Intent URL first (most reliable for Android)
+      if (deviceInfo.isAndroid) {
+         try {
+            window.location.href = androidIntentUrl
+         } catch (error) {
+            console.log("Android Intent method failed:", error)
+         }
       }
 
-      // Method 2: Try creating a hidden iframe
+      // Method 2: Try custom scheme deep link
+      setTimeout(() => {
+         try {
+            window.location.href = deepLinkUrl
+         } catch (error) {
+            console.log("Custom scheme method failed:", error)
+         }
+      }, 500)
+
+      // Method 3: Try creating a hidden iframe with Android Intent
       setTimeout(() => {
          const iframe = document.createElement("iframe")
          iframe.style.display = "none"
-         iframe.src = deepLinkUrl
+         iframe.src = deviceInfo.isAndroid ? androidIntentUrl : deepLinkUrl
          document.body.appendChild(iframe)
 
          setTimeout(() => {
@@ -40,17 +57,26 @@ const Share = () => {
                document.body.removeChild(iframe)
             }
          }, 1000)
-      }, 500)
+      }, 1000)
 
-      // Method 3: Try creating a temporary link
+      // Method 4: Try creating a temporary link
       setTimeout(() => {
          const link = document.createElement("a")
-         link.href = deepLinkUrl
+         link.href = deviceInfo.isAndroid ? androidIntentUrl : deepLinkUrl
          link.style.display = "none"
          document.body.appendChild(link)
          link.click()
          document.body.removeChild(link)
-      }, 1000)
+      }, 1500)
+
+      // Method 5: Try window.open as last resort
+      setTimeout(() => {
+         try {
+            window.open(deviceInfo.isAndroid ? androidIntentUrl : deepLinkUrl, "_self")
+         } catch (error) {
+            console.log("Window open method failed:", error)
+         }
+      }, 2000)
    }
 
    const getAppStoreUrl = () => {
@@ -71,9 +97,10 @@ const Share = () => {
    }
 
    const handleAppStoreClick = () => {
+      const roomId = searchParams.get("id")
+
       if (appOpened) {
          // Try to open the app again
-         const roomId = searchParams.get("id")
          attemptDeepLink(roomId)
          setStatusMessage("Opening CRIC LUDO...")
          setShowAppStoreButton(false)
@@ -83,8 +110,32 @@ const Share = () => {
             setStatusMessage("Tap to open CRIC LUDO")
          }, 2000)
       } else {
-         // Open Play Store
-         window.open(getAppStoreUrl(), "_blank")
+         // Try direct app opening first, then fallback to Play Store
+         const androidIntentUrl = `intent://share?id=${
+            roomId || ""
+         }#Intent;scheme=cricludo;package=com.nineXTechnology.CricLudo;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo;end`
+         const deepLinkUrl = `cricludo://share?id=${roomId || ""}`
+
+         if (deviceInfo.isAndroid) {
+            // Use Android Intent with fallback to Play Store
+            try {
+               window.location.href = androidIntentUrl
+            } catch (error) {
+               console.log("Android Intent failed, opening Play Store:", error)
+               window.open(getAppStoreUrl(), "_blank")
+            }
+         } else {
+            // For iOS or other devices, try deep link then Play Store
+            try {
+               window.location.href = deepLinkUrl
+               // If deep link fails, it will fallback to Play Store
+               setTimeout(() => {
+                  window.open(getAppStoreUrl(), "_blank")
+               }, 1000)
+            } catch (error) {
+               window.open(getAppStoreUrl(), "_blank")
+            }
+         }
       }
    }
 
