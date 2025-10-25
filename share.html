@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>CricLudo - Opening App</title>
+      <style>
+         * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+         }
+
+         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+               Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+         }
+
+         .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+         }
+
+         .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            animation: pulse 2s infinite;
+         }
+
+         .logo::before {
+            content: "CL";
+         }
+
+         @keyframes pulse {
+            0% {
+               transform: scale(1);
+            }
+            50% {
+               transform: scale(1.05);
+            }
+            100% {
+               transform: scale(1);
+            }
+         }
+
+         .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+         }
+
+         .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+            animation: fadeInOut 2s infinite;
+         }
+
+         @keyframes fadeInOut {
+            0%,
+            100% {
+               opacity: 0.7;
+            }
+            50% {
+               opacity: 1;
+            }
+         }
+
+         .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+         }
+
+         @keyframes spin {
+            0% {
+               transform: rotate(0deg);
+            }
+            100% {
+               transform: rotate(360deg);
+            }
+         }
+
+         .app-store-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 0.5s ease forwards 1s;
+         }
+
+         .app-store-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+         }
+
+         @keyframes slideUp {
+            to {
+               opacity: 1;
+               transform: translateY(0);
+            }
+         }
+
+         .hidden {
+            display: none;
+         }
+
+         .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 15px;
+         }
+
+         @media (max-width: 480px) {
+            .container {
+               padding: 30px 20px;
+               margin: 10px;
+            }
+
+            .logo {
+               width: 60px;
+               height: 60px;
+               font-size: 24px;
+            }
+
+            .title {
+               font-size: 20px;
+            }
+
+            .subtitle {
+               font-size: 14px;
+            }
+         }
+      </style>
+   </head>
+   <body>
+      <div class="container">
+         <div class="logo"></div>
+         <h1 class="title">CricLudo</h1>
+         <p class="subtitle" id="statusText">Opening CricLudo...</p>
+         <div class="loading-spinner" id="spinner"></div>
+         <a href="#" class="app-store-button hidden" id="appStoreButton"
+            >Open in App Store</a
+         >
+         <div class="error-message hidden" id="errorMessage"></div>
+      </div>
+
+      <script>
+         // Debug logging
+         console.log("CricLudo Share Page Loaded")
+         console.log("User Agent:", navigator.userAgent)
+         console.log("URL:", window.location.href)
+
+         // Device detection
+         function detectDevice() {
+            const userAgent = navigator.userAgent.toLowerCase()
+            const isAndroid = /android/.test(userAgent)
+            const isIOS = /iphone|ipad|ipod/.test(userAgent)
+
+            console.log("Device Detection - Android:", isAndroid, "iOS:", isIOS)
+            return { isAndroid, isIOS }
+         }
+
+         // Get URL parameters
+         function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search)
+            return urlParams.get(name)
+         }
+
+         // Deep link attempt
+         function attemptDeepLink() {
+            const userId = getUrlParameter("id")
+            const deepLinkUrl = `cricludo://share?id=${userId || ""}`
+
+            console.log("Attempting deep link:", deepLinkUrl)
+
+            // Create a hidden iframe to attempt the deep link
+            const iframe = document.createElement("iframe")
+            iframe.style.display = "none"
+            iframe.src = deepLinkUrl
+            document.body.appendChild(iframe)
+
+            // Clean up iframe after a short delay
+            setTimeout(() => {
+               document.body.removeChild(iframe)
+            }, 1000)
+         }
+
+         // Redirect to app store
+         function redirectToAppStore() {
+            const device = detectDevice()
+            const userId = getUrlParameter("id")
+            let appStoreUrl = ""
+
+            if (device.isAndroid) {
+               appStoreUrl =
+                  "https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo"
+               console.log("Redirecting to Play Store")
+            } else if (device.isIOS) {
+               appStoreUrl = "https://apps.apple.com/app/"
+               console.log("Redirecting to App Store")
+            } else {
+               // Default to Play Store for other devices
+               appStoreUrl =
+                  "https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo"
+               console.log("Unknown device, defaulting to Play Store")
+            }
+
+            // Update button text and href
+            const button = document.getElementById("appStoreButton")
+            const buttonText = device.isAndroid
+               ? "Open in Play Store"
+               : "Open in App Store"
+            button.textContent = buttonText
+            button.href = appStoreUrl
+
+            return appStoreUrl
+         }
+
+         // Show app store button
+         function showAppStoreButton() {
+            const button = document.getElementById("appStoreButton")
+            const spinner = document.getElementById("spinner")
+            const statusText = document.getElementById("statusText")
+
+            button.classList.remove("hidden")
+            spinner.classList.add("hidden")
+            statusText.textContent = "App not installed?"
+
+            console.log("Showing app store button")
+         }
+
+         // Handle errors
+         function showError(message) {
+            const errorDiv = document.getElementById("errorMessage")
+            errorDiv.textContent = message
+            errorDiv.classList.remove("hidden")
+            console.error("Error:", message)
+         }
+
+         // Main initialization
+         function init() {
+            console.log("Initializing CricLudo share page")
+
+            // Check if we have a user ID
+            const userId = getUrlParameter("id")
+            if (!userId) {
+               showError("No user ID provided in URL")
+               return
+            }
+
+            console.log("User ID:", userId)
+
+            // Attempt deep link immediately
+            attemptDeepLink()
+
+            // Set up app store button
+            redirectToAppStore()
+
+            // Show app store button after 1 second
+            setTimeout(() => {
+               showAppStoreButton()
+            }, 1000)
+
+            // Handle page visibility change (app might have opened)
+            document.addEventListener("visibilitychange", () => {
+               if (document.hidden) {
+                  console.log("Page became hidden - app might have opened")
+               } else {
+                  console.log("Page became visible - app might not have opened")
+               }
+            })
+
+            window.addEventListener("blur", () => {
+               console.log("Window lost focus - app might have opened")
+            })
+         }
+
+         document.addEventListener("DOMContentLoaded", init)
+
+         if (document.readyState === "loading") {
+         } else {
+            init()
+         }
+      </script>
+   </body>
+</html>
