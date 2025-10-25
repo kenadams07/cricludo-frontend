@@ -1,75 +1,99 @@
-import React from 'react';
-import image from '../assets/playground.png';
-import { Link } from 'react-router-dom';
-import Navigation from '../Components/Navigation';
-function PrivacyPolicy() {
-  return (
-    <div
-      className="relative w-full mx-auto text-white bg-cover bg-center bg-no-repeat h-[100dvh] "
-      style={{ backgroundImage: `url(${image})` }}
+import React from "react"
 
-    >
-      {/* Overlay */}
+const PrivacyPolicy = () => {
+   return (
+      <div className='page-container'>
+         <div className='container'>
+            <div className='page-header'>
+               <h1>Privacy Policy</h1>
+               <p className='page-subtitle'>Last updated: October 25, 2024</p>
+            </div>
 
-      {/* Content */}
-      <div className="px-14 py-12 lg:px-40 lg:py-20 flex justify-center flex-col">
-         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Privacy Policy</h1>
-          
-        </div>
-        
+            <div className='content-section'>
+               <div className='card'>
+                  <h2>Introduction</h2>
+                  <p>
+                     Welcome to CRIC LUDO! This Privacy Policy explains how 9X Technology
+                     LLC ("we," "our," or "us") collects, uses, and protects your
+                     information when you use our mobile application.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          We appreciate your interest in <strong>CricLudo</strong> and thank you for choosing to be part of our gaming community. Your privacy is important to us, and this Privacy Policy describes how your information is collected, used, and protected when you use our mobile game.
-        </p>
+               <div className='card'>
+                  <h2>Information We Collect</h2>
+                  <h3>Personal Information</h3>
+                  <ul>
+                     <li>Account information (username, email)</li>
+                     <li>Profile information you choose to provide</li>
+                     <li>Game statistics and achievements</li>
+                  </ul>
 
-        <p className="mb-4">
-          By using CricLudo, you agree to the practices described here. When you create an account or sign in through third-party platforms, we may collect information such as your username, email address, and profile image if available.
-        </p>
+                  <h3>Device Information</h3>
+                  <ul>
+                     <li>Device type and operating system</li>
+                     <li>App version and usage data</li>
+                     <li>Crash reports and performance data</li>
+                  </ul>
+               </div>
 
-        <p className="mb-4">
-          Additionally, to enhance gameplay and personalize your experience, we collect data related to your in-game activity, including matches played, scores, preferences, and interactions.
-        </p>
+               <div className='card'>
+                  <h2>How We Use Your Information</h2>
+                  <ul>
+                     <li>To provide and improve our gaming services</li>
+                     <li>To enable multiplayer functionality</li>
+                     <li>To personalize your gaming experience</li>
+                     <li>To communicate with you about updates</li>
+                     <li>To ensure app security and prevent fraud</li>
+                  </ul>
+               </div>
 
-        <p className="mb-4">
-          Device information such as your operating system, app version, and technical performance details may also be recorded to help us monitor usage and improve game stability.
-        </p>
+               <div className='card'>
+                  <h2>Data Security</h2>
+                  <p>
+                     We implement appropriate security measures to protect your personal
+                     information against unauthorized access, alteration, disclosure, or
+                     destruction. Your data is encrypted in transit and at rest.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          Your information helps us deliver features, maintain functionality, troubleshoot issues, and provide relevant notifications or updates.
-        </p>
+               <div className='card'>
+                  <h2>Third-Party Services</h2>
+                  <p>
+                     Our app may integrate with third-party services for analytics,
+                     advertising, and social features. These services have their own
+                     privacy policies.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          We may also use third-party services for analytics, hosting, and performance monitoring. These partners may process limited data on our behalf under strict confidentiality agreements.
-        </p>
+               <div className='card'>
+                  <h2>Your Rights</h2>
+                  <ul>
+                     <li>Access your personal data</li>
+                     <li>Correct inaccurate information</li>
+                     <li>Delete your account and data</li>
+                     <li>Opt-out of marketing communications</li>
+                  </ul>
+               </div>
 
-        <p className="mb-4">
-          Any user-generated content, including usernames, avatars, or match outcomes, may be visible to other players within the game.
-        </p>
-
-        <p className="mb-4">
-          We do not knowingly allow children under the age of 8 to register or use CricLudo, and we strongly recommend parental supervision for minors under the age of 13.
-        </p>
-
-        <p className="mb-4">
-          Players are not allowed to upload or share media that contains identifiable human faces or personal information, as CricLudo is focused purely on gameplay.
-        </p>
-
-        <p className="mb-4">
-          Security measures are in place to protect your data, although no digital platform is entirely risk-free.
-        </p>
-
-        <p className="mb-4">
-          We reserve the right to update this policy at any time, and significant changes will be communicated through the app. By continuing to use CricLudo, you accept any modifications made to this Privacy Policy.
-        </p>
-
-        <p className="mb-4">
-          If you have any concerns or inquiries about how your data is handled, you may contact us at: <a href="mailto:info@9xtechnology.com" className="text-blue-400 underline">info@9xtechnology.com</a>
-        </p>
+               <div className='card'>
+                  <h2>Contact Us</h2>
+                  <p>
+                     If you have any questions about this Privacy Policy, please contact
+                     us at:
+                  </p>
+                  <p>
+                     <strong>Email:</strong> info@9xtechnology.com
+                     <br />
+                     <strong>Address:</strong> 108, 2020 Building, Al Quoz 3 Sheikh Zayed
+                     Road, Dubai, UAE
+                     <br />
+                     <strong>Phone:</strong> +971 52 228 0076
+                  </p>
+               </div>
+            </div>
+         </div>
       </div>
-      <Navigation/>
-    </div>
-  );
+   )
 }
 
-export default PrivacyPolicy;
+export default PrivacyPolicy

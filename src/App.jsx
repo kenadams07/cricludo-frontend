@@ -1,29 +1,38 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate  } from 'react-router-dom';
-import ErrorBoundary from './utils/ErrorBoundary';
-import PrivacyPolicy from './Pages/PrivacyPolicy';
-import TermsAndConditions from './Pages/TermsAndConditions';
-import NotFound from './Pages/NotFound';
-import BuggyComponent from './Pages/Error';
-import Home from './Pages/Home';
-import Navigation from './Components/Navigation';
+import React from "react"
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import Navigation from "./Components/Navigation"
+import Home from "./Pages/Home"
+import Share from "./Pages/Share"
+import PrivacyPolicy from "./Pages/PrivacyPolicy"
+import TermsAndConditions from "./Pages/TermsAndConditions"
+import Error from "./Pages/Error"
+import NotFound from "./Pages/NotFound"
+import ErrorBoundary from "./utils/ErrorBoundary"
+import "./App.css"
 
 function App() {
-  return (
-    <Router>
+   return (
       <ErrorBoundary>
-      <Routes>
-        <Route path="/" element={<Home/>} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-        <Route path="*" element={<NotFound />} />  {/* Catch-all route */}
-        <Route path="/error-test" element={<BuggyComponent />} />
-        
-      </Routes>
+         <Router>
+            <div className='App'>
+               <Navigation />
+               <main className='main-content'>
+                  <Routes>
+                     <Route path='/' element={<Home />} />
+                     <Route path='/share' element={<Share />} />
+                     <Route path='/privacy-policy' element={<PrivacyPolicy />} />
+                     <Route
+                        path='/terms-and-conditions'
+                        element={<TermsAndConditions />}
+                     />
+                     <Route path='/error' element={<Error />} />
+                     <Route path='*' element={<NotFound />} />
+                  </Routes>
+               </main>
+            </div>
+         </Router>
       </ErrorBoundary>
-    </Router>
-  );
+   )
 }
 
-export default App;
-
+export default App

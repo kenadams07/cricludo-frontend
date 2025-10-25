@@ -1,24 +1,49 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from "react"
+import { Link } from "react-router-dom"
 
 const NotFound = () => {
-  const navigate = useNavigate();
+   return (
+      <div className='not-found-page'>
+         <div className='container'>
+            <div className='not-found-content text-center'>
+               <div className='not-found-icon'>
+                  <span>🔍</span>
+               </div>
+               <h1>404 - Page Not Found</h1>
+               <p className='not-found-message'>
+                  Sorry, the page you're looking for doesn't exist or has been moved.
+               </p>
 
-  return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-800 px-4 text-center">
-      <h1 className="text-6xl font-bold mb-2">404</h1>
-      <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
-      <p className="mb-6 text-gray-600">
-        The page you’re looking for doesn’t exist or has been moved.
-      </p>
-      <Link
-        to="/"
-        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition duration-200"
-      >
-        Go to Home
-      </Link>
-    </div>
-  );
-};
+               <div className='not-found-actions'>
+                  <Link to='/' className='btn btn-primary'>
+                     Go Home
+                  </Link>
+                  <button
+                     className='btn btn-outline'
+                     onClick={() => window.history.back()}
+                  >
+                     Go Back
+                  </button>
+               </div>
 
-export default NotFound;
+               <div className='not-found-suggestions'>
+                  <h3>Maybe you were looking for:</h3>
+                  <ul>
+                     <li>
+                        <Link to='/'>Home Page</Link>
+                     </li>
+                     <li>
+                        <Link to='/privacy-policy'>Privacy Policy</Link>
+                     </li>
+                     <li>
+                        <Link to='/terms-and-conditions'>Terms & Conditions</Link>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+   )
+}
+
+export default NotFound

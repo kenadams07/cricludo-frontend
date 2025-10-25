@@ -1,52 +1,78 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react"
 
 class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
-  }
+   constructor(props) {
+      super(props)
+      this.state = { hasError: false, error: null, errorInfo: null }
+   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
+   static getDerivedStateFromError(error) {
+      // Update state so the next render will show the fallback UI
+      return { hasError: true }
+   }
 
-  componentDidCatch(error, errorInfo) {
-    console.error("Error caught in ErrorBoundary:", error, errorInfo);
-    this.setState({ errorInfo });
-  }
+   componentDidCatch(error, errorInfo) {
+      // Log the error to console and any error reporting service
+      console.error("ErrorBoundary caught an error:", error, errorInfo)
 
-  
-        render() {
-          if (this.state.hasError) {
-            return (
-              <div className="flex flex-col items-center justify-center h-screen bg-red-50 text-red-800 px-4 text-center">
-                <h1 className="text-3xl font-bold mb-2">Something went wrong.</h1>
-                <p className="mb-4 text-red-600 max-w-xl">
-                  {this.state.error?.toString()}
-                </p>
-                <div className='flex gap-4 mt-4'>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded transition duration-200"
-                >
-                  Reload Page
-                </button>
-                <Link
-                  to="/"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition duration-200"
-                >
-                  Go to Home
-                </Link>
+      this.setState({
+         error: error,
+         errorInfo: errorInfo,
+      })
+   }
 
-                </div>
-                
-              </div>
-            );
-          }
-        
-          return this.props.children;
-        }
+   render() {
+      if (this.state.hasError) {
+         // Fallback UI
+         return (
+            <div className='error-boundary'>
+               <div className='container'>
+                  <div className='error-boundary-content text-center'>
+                     <div className='error-icon'>
+                        <span>🚨</span>
+                     </div>
+                     <h1>Something went wrong</h1>
+                     <p>
+                        We're sorry, but something unexpected happened. Please try
+                        refreshing the page.
+                     </p>
+
+                     <div className='error-actions'>
+                        <button
+                           className='btn btn-primary'
+                           onClick={() => window.location.reload()}
+                        >
+                           Refresh Page
+                        </button>
+                        <button
+                           className='btn btn-secondary'
+                           onClick={() =>
+                              this.setState({
+                                 hasError: false,
+                                 error: null,
+                                 errorInfo: null,
+                              })
+                           }
+                        >
+                           Try Again
+                        </button>
+                     </div>
+
+                     {process.env.NODE_ENV === "development" && this.state.error && (
+                        <details className='error-details'>
+                           <summary>Error Details (Development)</summary>
+                           <pre>{this.state.error && this.state.error.toString()}</pre>
+                           <pre>{this.state.errorInfo.componentStack}</pre>
+                        </details>
+                     )}
+                  </div>
+               </div>
+            </div>
+         )
+      }
+
+      return this.props.children
+   }
 }
 
-export default ErrorBoundary;
+export default ErrorBoundary

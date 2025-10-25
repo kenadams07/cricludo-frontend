@@ -1,73 +1,90 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react"
+import { Link, useLocation } from "react-router-dom"
 
 const Navigation = () => {
-  return (
-      <nav className="absolute bottom-0 w-full h-32 flex flex-col-reverse items-center  md:flex-row justify-between px-8 pb-8 gap-4">
-        {/* routes */}
-        <div className=" text-nowrap">
-        <Link
-            to="/"
-            className="text-white font-medium py-2 px-4 rounded"
-          >
-            Home
-          </Link>
-        <Link
-            to="/privacy-policy"
-            className="text-white font-medium py-2 px-4 rounded"
-          >
-            Privacy Policy
-          </Link>
-          <Link
-            to="/terms-and-conditions"
-            className="text-white font-medium py-2 px-4 rounded"
-          >
-            Terms and Conditions
-          </Link>
-          
-        </div>
-        {/* Download links */}
+   const [isMenuOpen, setIsMenuOpen] = useState(false)
+   const location = useLocation()
 
-        <div className="flex flex-col items-center justify-between gap-2 text-white">
-          <h1 className="text-base">Get our App</h1>
-          {/* google icon */}
-          <div className="flex items-center justify-center gap-4">
-            <Link
-              className="w-full"
-              to="https://play.google.com/store/apps/details?id=net.metaquotes.metatrader5&pli=1"
-              target="_blank"
-            >
-              <button className="font-semibold rounded-xl flex items-center justify-center text-nowrap bg-black px-4 py-2 gap-2 border border-white">
-                <img
-                  width="30"
-                  height="30"
-                  src="https://img.icons8.com/fluency/48/google-play.png"
-                  alt="google-play"
-                />
-                <p className="text-sm">Google Play</p>
-              </button>
-            </Link>
+   const toggleMenu = () => {
+      setIsMenuOpen(!isMenuOpen)
+   }
 
-            {/* apple icon */}
-            <Link
-              className="w-full"
-              to="https://apps.apple.com/gb/app/metatrader-5/id413251709"
-              target="_blank"
-            >
-              <button className="font-semibold rounded-xl flex items-center justify-center text-nowrap bg-black px-4 py-2 gap-2 border border-white">
-                <img
-                  alt="svgImg"
-                  width="30"
-                  height="30"
-                  src="https://img.icons8.com/?size=100&id=17843&format=png&color=000000"
-                />
-                <p className="text-sm">App Store</p>
-              </button>
-            </Link>
-          </div>
-        </div>
+   const closeMenu = () => {
+      setIsMenuOpen(false)
+   }
+
+   return (
+      <nav className='navbar'>
+         <div className='container'>
+            <div className='navbar-content'>
+               <Link to='/' className='navbar-brand' onClick={closeMenu}>
+                  CRIC LUDO
+               </Link>
+
+               {/* Mobile menu button */}
+               <button
+                  className='mobile-menu-btn'
+                  onClick={toggleMenu}
+                  aria-label='Toggle menu'
+               >
+                  <span className={`hamburger ${isMenuOpen ? "active" : ""}`}>
+                     <span></span>
+                     <span></span>
+                     <span></span>
+                  </span>
+               </button>
+
+               {/* Navigation menu */}
+               <ul className={`navbar-nav ${isMenuOpen ? "active" : ""}`}>
+                  <li>
+                     <Link
+                        to='/'
+                        className={`nav-link ${
+                           location.pathname === "/" ? "active" : ""
+                        }`}
+                        onClick={closeMenu}
+                     >
+                        Home
+                     </Link>
+                  </li>
+                  <li>
+                     <Link
+                        to='/privacy-policy'
+                        className={`nav-link ${
+                           location.pathname === "/privacy-policy" ? "active" : ""
+                        }`}
+                        onClick={closeMenu}
+                     >
+                        Privacy Policy
+                     </Link>
+                  </li>
+                  <li>
+                     <Link
+                        to='/terms-and-conditions'
+                        className={`nav-link ${
+                           location.pathname === "/terms-and-conditions" ? "active" : ""
+                        }`}
+                        onClick={closeMenu}
+                     >
+                        Terms & Conditions
+                     </Link>
+                  </li>
+                  <li>
+                     <a
+                        href='https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo'
+                        className='btn btn-primary'
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        onClick={closeMenu}
+                     >
+                        Download App
+                     </a>
+                  </li>
+               </ul>
+            </div>
+         </div>
       </nav>
-  );
-};
+   )
+}
 
-export default Navigation;
+export default Navigation

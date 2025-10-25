@@ -1,112 +1,139 @@
-import React from "react";
-import image from "../assets/playground.png";
-import { Link } from "react-router-dom";
-import Navigation from "../Components/Navigation";
+import React from "react"
 
-function TermsAndConditions() {
-  return (
-    <div
-      className="relative w-full mx-auto text-white bg-cover bg-center bg-no-repeat h-[100dvh]"
-      style={{ backgroundImage: `url(${image})` }}
-    >
-      {/* Content */}
-      <div className=" px-14 py-12 lg:px-40 lg:py-20 flex justify-center flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Terms and Conditions</h1>
-        </div>
+const TermsAndConditions = () => {
+   return (
+      <div className='page-container'>
+         <div className='container'>
+            <div className='page-header'>
+               <h1>Terms and Conditions</h1>
+               <p className='page-subtitle'>Last updated: October 25, 2024</p>
+            </div>
 
-        <p className="mb-4">
-          By downloading or using <strong>CricLudo</strong>, you agree to the
-          following terms and conditions:
-        </p>
+            <div className='content-section'>
+               <div className='card'>
+                  <h2>Acceptance of Terms</h2>
+                  <p>
+                     By downloading, installing, or using the CRIC LUDO mobile
+                     application, you agree to be bound by these Terms and Conditions. If
+                     you do not agree to these terms, please do not use our application.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Use of the App:&nbsp;&nbsp;</span> CricLudo is
-          designed for entertainment purposes only. You agree to use the app
-          lawfully and respectfully, without exploiting, disrupting, or harming
-          the experience for others.
-        </p>
+               <div className='card'>
+                  <h2>Description of Service</h2>
+                  <p>
+                     CRIC LUDO is a mobile gaming application that combines traditional
+                     ludo gameplay with cricket-themed elements and live video calling
+                     features. The app is developed and operated by 9X Technology LLC.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Account Responsibility:&nbsp;&nbsp;</span> You are
-          responsible for maintaining the confidentiality of your account
-          information and ensuring that your activity within the app complies
-          with these terms.
-        </p>
+               <div className='card'>
+                  <h2>User Accounts</h2>
+                  <h3>Account Creation</h3>
+                  <ul>
+                     <li>You must provide accurate and complete information</li>
+                     <li>You are responsible for maintaining account security</li>
+                     <li>One account per person</li>
+                  </ul>
 
-        <p className="mb-4">
-          <span className="font-bold">Intellectual Property:&nbsp;&nbsp;</span> All game
-          content, including visuals, logos, gameplay mechanics, and code, is
-          protected by intellectual property laws. You may not copy, modify,
-          distribute, or reuse any part of the app without written permission.
-        </p>
+                  <h3>Account Responsibilities</h3>
+                  <ul>
+                     <li>Keep your login credentials secure</li>
+                     <li>Notify us of any unauthorized access</li>
+                     <li>You are responsible for all activities under your account</li>
+                  </ul>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">In-App Purchases:&nbsp;&nbsp;</span> All purchases
-          made within the app are final and non-refundable unless required by
-          local law or the app store’s refund policy.
-        </p>
+               <div className='card'>
+                  <h2>Acceptable Use</h2>
+                  <h3>You May:</h3>
+                  <ul>
+                     <li>Play games according to the rules</li>
+                     <li>Use video calling features appropriately</li>
+                     <li>Connect with friends and family</li>
+                  </ul>
 
-        <p className="mb-4">
-          <span className="font-bold">Third-Party Content:&nbsp;&nbsp;</span> CricLudo
-          may include ads or links to third-party services. We are not
-          responsible for the content, availability, or practices of these
-          third-party providers.
-        </p>
+                  <h3>You May Not:</h3>
+                  <ul>
+                     <li>Use the app for illegal activities</li>
+                     <li>Harass or abuse other users</li>
+                     <li>Attempt to hack or exploit the app</li>
+                     <li>Share inappropriate content</li>
+                     <li>Create multiple accounts to gain unfair advantage</li>
+                  </ul>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">User Conduct:&nbsp;&nbsp;</span> Users are
-          prohibited from posting or sharing any content that is offensive,
-          misleading, abusive, illegal, or violates any applicable laws. Sharing
-          of images containing identifiable people is strictly not allowed.
-        </p>
+               <div className='card'>
+                  <h2>In-App Purchases</h2>
+                  <p>
+                     CRIC LUDO may offer in-app purchases for virtual items, features, or
+                     premium content. All purchases are final and non-refundable unless
+                     required by law.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Age Restrictions:&nbsp;&nbsp;</span> CricLudo is
-          intended for users aged 8 and above. Children under 13 should use the
-          app under the supervision of a parent or guardian.
-        </p>
+               <div className='card'>
+                  <h2>Intellectual Property</h2>
+                  <p>
+                     The CRIC LUDO app, including its design, graphics, and content, is
+                     protected by intellectual property laws. You may not copy, modify, or
+                     distribute our content without permission.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Data and Privacy:&nbsp;&nbsp;</span> Use of
-          CricLudo is subject to our Privacy Policy. By using the app, you
-          consent to the collection and use of information as outlined in the
-          policy.
-        </p>
+               <div className='card'>
+                  <h2>Privacy</h2>
+                  <p>
+                     Your privacy is important to us. Please review our Privacy Policy to
+                     understand how we collect, use, and protect your information.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Service Availability:&nbsp;&nbsp;</span> We strive
-          to keep CricLudo functional and enjoyable, but we do not guarantee
-          uninterrupted access or that the app will be free from errors or bugs.
-        </p>
+               <div className='card'>
+                  <h2>Limitation of Liability</h2>
+                  <p>
+                     To the maximum extent permitted by law, 9X Technology LLC shall not
+                     be liable for any indirect, incidental, special, or consequential
+                     damages arising from your use of the app.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Termination of Access:&nbsp;&nbsp;</span> We
-          reserve the right to suspend or terminate any account found violating
-          these terms or engaging in harmful behavior.
-        </p>
+               <div className='card'>
+                  <h2>Termination</h2>
+                  <p>
+                     We reserve the right to terminate or suspend your account at any time
+                     for violations of these terms or for any other reason at our
+                     discretion.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Modifications to Terms:&nbsp;&nbsp;</span> These
-          terms may be updated over time. Continued use of CricLudo after
-          changes have been made indicates your acceptance of the updated terms.
-        </p>
+               <div className='card'>
+                  <h2>Changes to Terms</h2>
+                  <p>
+                     We may update these Terms and Conditions from time to time. We will
+                     notify users of significant changes through the app or other means.
+                  </p>
+               </div>
 
-        <p className="mb-4">
-          <span className="font-bold">Contact Us:&nbsp;&nbsp;</span> If you have any
-          questions about these Terms and Conditions, please contact us at:
-          <a
-            href="mailto:info@9xtechnology.com"
-            className="text-blue-400 underline ml-1"
-          >
-            info@9xtechnology.com
-          </a>
-        </p>
+               <div className='card'>
+                  <h2>Contact Information</h2>
+                  <p>
+                     For questions about these Terms and Conditions, please contact us:
+                  </p>
+                  <p>
+                     <strong>Email:</strong> info@9xtechnology.com
+                     <br />
+                     <strong>Address:</strong> 108, 2020 Building, Al Quoz 3 Sheikh Zayed
+                     Road, Dubai, UAE
+                     <br />
+                     <strong>Phone:</strong> +971 52 228 0076
+                  </p>
+               </div>
+            </div>
+         </div>
       </div>
-
-      <Navigation />
-    </div>
-  );
+   )
 }
 
-export default TermsAndConditions;
+export default TermsAndConditions
