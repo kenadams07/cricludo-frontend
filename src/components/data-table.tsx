@@ -114,6 +114,7 @@ export function DataTable({
   paginationConfig,
   userType,
   reFetchData,
+  isUserListOnly,
 }: {
   data: any[];
   columns: ColumnDef<any, any>[];
@@ -124,6 +125,7 @@ export function DataTable({
   };
   userType?: string;
   reFetchData?: () => void;
+  isUserListOnly?: boolean;
 }) {
 
   console.log("DataTable rendered with data:", initialData);
@@ -138,7 +140,7 @@ export function DataTable({
     paginationConfig && setPagination(paginationConfig);
   }, [initialData]);
 
-  
+
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -159,8 +161,21 @@ export function DataTable({
   );
   const [globalFilter, setGlobalFilter] = React.useState("");
 
+const filteredData = React.useMemo(() => {
+  let result = [...data];
+
+  if (isUserListOnly) {
+    result = result.filter((user) => user.isAgent === false);
+  }
+
+  result.sort((a, b) => b.totalTimeSpent - a.totalTimeSpent);
+
+  return result;
+}, [data, isUserListOnly]);
+
+
   const table = useReactTable({
-    data,
+    data:filteredData,
     columns,
     state: {
       sorting,

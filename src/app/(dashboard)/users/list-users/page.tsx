@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import UserAvatar from "@/components/user-avatar";
 import { formatPlaytime } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const schema = z.object({
   id: z.string(),
@@ -159,6 +159,7 @@ export default function ListUsersPage() {
   let chartData = useAnalysisStore((state) => state.chartData);
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
+  const pathname = usePathname();
 
   const setTitle = useAuthStore((t) => t.setTitle);
 
@@ -181,6 +182,7 @@ console.log("chart data:", chartData);
               data={userTableData}
               columns={columns}
               rowClickable={true}
+              isUserListOnly = {pathname === "/list-users"}
             />
           )}
         </div>
