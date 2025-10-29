@@ -5,7 +5,7 @@ const TermsAndConditions = () => {
       <div className='page-container'>
          <div className='container'>
             <div className='page-header'>
-               <h1>Terms and Conditions</h1>
+               <h1 className='page-subtitle' >Terms and Conditions</h1>
                <p className='page-subtitle'>Last updated: October 25, 2024</p>
             </div>
 
@@ -122,12 +122,12 @@ const TermsAndConditions = () => {
                      For questions about these Terms and Conditions, please contact us:
                   </p>
                   <p>
-                     <strong>Email:</strong> info@9xtechnology.com
+                     <strong>Email:</strong> info@cricludo.com
                      <br />
-                     <strong>Address:</strong> 108, 2020 Building, Al Quoz 3 Sheikh Zayed
+                     {/* <strong>Address:</strong> 108, 2020 Building, Al Quoz 3 Sheikh Zayed
                      Road, Dubai, UAE
-                     <br />
-                     <strong>Phone:</strong> +971 52 228 0076
+                     <br /> */}
+                     {/* <strong>Phone:</strong> Not Available */}
                   </p>
                </div>
             </div>

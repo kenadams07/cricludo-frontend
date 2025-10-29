@@ -1,7 +1,7 @@
 /* CRIC LUDO Global Color Variables */
 :root {
    /* Primary Brand Colors */
-   --cric-primary: #ff0000;
+   --cric-primary: #ffffff;
    --cric-secondary: #020000;
    --cric-accent: #ff0000;
 
@@ -313,7 +313,6 @@ p {
 .navbar-brand {
    font-size: 1.5rem;
    font-weight: 800;
-   background: var(--cric-gradient-text);
    background-clip: text;
    -webkit-background-clip: text;
    -webkit-text-fill-color: transparent;

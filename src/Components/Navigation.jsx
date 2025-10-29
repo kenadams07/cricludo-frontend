@@ -18,7 +18,7 @@ const Navigation = () => {
          <div className='container'>
             <div className='navbar-content'>
                <Link to='/' className='navbar-brand' onClick={closeMenu}>
-                  CRIC LUDO
+                  <span className="decoration-black">CRIC LUDO</span>
                </Link>
 
                {/* Mobile menu button */}
@@ -77,7 +77,18 @@ const Navigation = () => {
                         rel='noopener noreferrer'
                         onClick={closeMenu}
                      >
-                        Download App
+                        Playstore App
+                     </a>
+                  </li>
+                    <li>
+                     <a
+                        href='https://apps.apple.com/ae/app/cricludo/id6741326528'
+                        className='btn btn-primary'
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        onClick={closeMenu}
+                     >
+                        Apple Store
                      </a>
                   </li>
                </ul>

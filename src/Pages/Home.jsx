@@ -10,14 +10,6 @@ const Home = () => {
                   <h1>CRIC LUDO</h1>
                   <p>The Ultimate Combo of Ludo, Cricket & Live Video Calling!</p>
                   <div className='hero-buttons'>
-                     <a
-                        href='https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo'
-                        className='btn btn-primary'
-                        target='_blank'
-                        rel='noopener noreferrer'
-                     >
-                        Download Now
-                     </a>
                      <a href='#features' className='btn btn-outline'>
                         Learn More
                      </a>
@@ -105,7 +97,7 @@ const Home = () => {
                </div>
 
                <div className='row'>
-                  <div className='col-6'>
+                  <div className='col-6 p-1'>
                      <div className='card'>
                         <h3>🏏 Cricket Ludo</h3>
                         <p>
@@ -120,7 +112,7 @@ const Home = () => {
                      </div>
                   </div>
 
-                  <div className='col-6'>
+                  <div className='col-6 p-1'>
                      <div className='card'>
                         <h3>🎲 Classic Ludo</h3>
                         <p>
@@ -147,17 +139,6 @@ const Home = () => {
                      Download CRIC LUDO now and enjoy ludo, cricket, and real-time fun—all
                      in one place!
                   </p>
-               </div>
-
-               <div className='text-center'>
-                  <a
-                     href='https://play.google.com/store/apps/details?id=com.nineXTechnology.CricLudo'
-                     className='btn btn-primary'
-                     target='_blank'
-                     rel='noopener noreferrer'
-                  >
-                     Download from Play Store
-                  </a>
                </div>
             </div>
          </section>
