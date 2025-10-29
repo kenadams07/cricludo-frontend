@@ -256,7 +256,7 @@ const filteredData = React.useMemo(() => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                   <IconLayoutColumns />
-                  <span className="hidden lg:inline">Customize Columns</span>
+                  <span className="hidden lg:inline text-black">Customize Columns</span>
                   <span className="lg:hidden">Columns</span>
                   <IconChevronDown />
                 </Button>

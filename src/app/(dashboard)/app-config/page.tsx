@@ -1,0 +1,1072 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { format } from "date-fns"
+import { ColumnDef } from "@tanstack/react-table"
+import { useAuthStore } from "@/store/authStore"
+import { DataTable } from "@/components/data-table"
+import { Button } from "@/components/ui/button"
+import {
+   Dialog,
+   DialogContent,
+   DialogHeader,
+   DialogTitle,
+   DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+   Card,
+   CardContent,
+   CardDescription,
+   CardHeader,
+   CardTitle,
+} from "@/components/ui/card"
+import { PlusCircle, Pencil, Trash2, Save, Settings } from "lucide-react"
+import {
+   useAppConfig,
+   useAddEmoji,
+   useUpdateEmoji,
+   useDeleteEmoji,
+   useUploadFile,
+   useGetFileUrl,
+   useUpdateAppConfig,
+} from "@/hooks/useAppConfig"
+import { toast } from "sonner"
+import * as z from "zod"
+
+const schema = z.object({
+   id: z.string(),
+   price: z.number(),
+   coinType: z.enum(["coin", "diamond"]),
+   emogiPicUrl: z.string().optional(),
+   emogiAnimationUrl: z.string().optional(),
+   createdAt: z.string(),
+})
+
+type Emoji = z.infer<typeof schema>
+
+const columns: ColumnDef<Emoji>[] = [
+   {
+      accessorKey: "id",
+      header: "ID",
+   },
+   {
+      accessorKey: "price",
+      header: "Price",
+      cell: ({ row }) => {
+         return <div className='font-medium'>{row.original.price.toLocaleString()}</div>
+      },
+   },
+   {
+      accessorKey: "coinType",
+      header: "Coin Type",
+      cell: ({ row }) => {
+         const type = row.original.coinType
+         return (
+            <span
+               className={`px-2 py-1 rounded text-xs font-medium ${
+                  type === "coin"
+                     ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                     : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+               }`}
+            >
+               {type}
+            </span>
+         )
+      },
+   },
+   {
+      accessorKey: "emogiPicUrl",
+      header: "Image",
+      cell: ({ row }) => {
+         const key = row.original.emogiPicUrl
+         if (!key) return <span className='text-gray-400'>No image</span>
+         return <ImagePreview key={key} s3Key={key} />
+      },
+   },
+   {
+      accessorKey: "emogiAnimationUrl",
+      header: "Animation",
+      cell: ({ row }) => {
+         const key = row.original.emogiAnimationUrl
+         if (!key) return <span className='text-gray-400'>No animation</span>
+         return (
+            <span className='text-sm text-blue-600 dark:text-blue-400'>
+               {key.split("/").pop()}
+            </span>
+         )
+      },
+   },
+   {
+      accessorKey: "createdAt",
+      header: "Created At",
+      cell: ({ row }) => {
+         const date = new Date(row.original.createdAt)
+         return <div className='text-sm'>{format(date, "yyyy-MM-dd HH:mm")}</div>
+      },
+   },
+   {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+         const emoji = row.original
+         return <EmojiActions emoji={emoji} />
+      },
+   },
+]
+
+function ImagePreview({ s3Key }: { s3Key: string }) {
+   const { data } = useGetFileUrl(s3Key)
+
+   if (!data?.url) {
+      return <span className='text-gray-400 text-sm'>Loading...</span>
+   }
+
+   return (
+      <img
+         src={data.url}
+         alt='Emoji'
+         className='w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700'
+         onError={(e) => {
+            ;(e.target as HTMLImageElement).style.display = "none"
+         }}
+      />
+   )
+}
+
+function EmojiActions({ emoji }: { emoji: Emoji }) {
+   const { trigger: deleteTrigger, isMutating: isDeleting } = useDeleteEmoji(emoji.id)
+   const { mutate } = useAppConfig()
+
+   const handleDelete = async () => {
+      if (!confirm(`Are you sure you want to delete emoji ${emoji.id}?`)) {
+         return
+      }
+
+      try {
+         await deleteTrigger()
+         toast.success("Emoji deleted successfully")
+         mutate()
+      } catch (error: any) {
+         toast.error(error.message || "Failed to delete emoji")
+      }
+   }
+
+   return (
+      <div className='flex gap-2'>
+         <EditEmojiDialog emoji={emoji} />
+         <Button variant='outline' size='sm' onClick={handleDelete} disabled={isDeleting}>
+            <Trash2 className='h-4 w-4 text-red-500' />
+         </Button>
+      </div>
+   )
+}
+
+function EditEmojiDialog({ emoji }: { emoji: Emoji }) {
+   const [open, setOpen] = useState(false)
+   const [formData, setFormData] = useState({
+      price: emoji.price,
+      coinType: emoji.coinType,
+      emogiPicUrl: emoji.emogiPicUrl || "",
+      emogiAnimationUrl: emoji.emogiAnimationUrl || "",
+   })
+   const [imageFile, setImageFile] = useState<File | null>(null)
+   const [animationFile, setAnimationFile] = useState<File | null>(null)
+   const [imagePreview, setImagePreview] = useState<string | null>(null)
+
+   const { trigger: updateTrigger, isMutating: isUpdating } = useUpdateEmoji(emoji.id)
+   const { trigger: uploadTrigger } = useUploadFile()
+   const { mutate } = useAppConfig()
+   const { data: imageUrlData } = useGetFileUrl(formData.emogiPicUrl)
+
+   useEffect(() => {
+      if (imageFile) {
+         const reader = new FileReader()
+         reader.onloadend = () => {
+            setImagePreview(reader.result as string)
+         }
+         reader.readAsDataURL(imageFile)
+      } else {
+         setImagePreview(null)
+      }
+   }, [imageFile])
+
+   const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+
+      try {
+         let imageKey = formData.emogiPicUrl
+         let animationKey = formData.emogiAnimationUrl
+
+         // Upload image if new file selected
+         if (imageFile) {
+            const imageRes = await uploadTrigger({ file: imageFile, type: "image" })
+            imageKey = imageRes.key
+         }
+
+         // Upload animation if new file selected
+         if (animationFile) {
+            const animationRes = await uploadTrigger({
+               file: animationFile,
+               type: "animation",
+            })
+            animationKey = animationRes.key
+         }
+
+         await updateTrigger({
+            price: formData.price,
+            coinType: formData.coinType,
+            emogiPicUrl: imageKey,
+            emogiAnimationUrl: animationKey,
+         })
+
+         toast.success("Emoji updated successfully")
+         setOpen(false)
+         setImageFile(null)
+         setAnimationFile(null)
+         setImagePreview(null)
+         mutate()
+      } catch (error: any) {
+         toast.error(error.message || "Failed to update emoji")
+      }
+   }
+
+   return (
+      <Dialog open={open} onOpenChange={setOpen}>
+         <DialogTrigger asChild>
+            <Button variant='outline' size='sm'>
+               <Pencil className='text-black h-4 w-4' />
+            </Button>
+         </DialogTrigger>
+         <DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto'>
+            <DialogHeader>
+               <DialogTitle className='text-xl'>Edit Emoji #{emoji.id}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className='space-y-5'>
+               <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                     <Label htmlFor='price'>Price *</Label>
+                     <Input
+                        id='price'
+                        type='number'
+                        value={formData.price}
+                        onChange={(e) =>
+                           setFormData({ ...formData, price: Number(e.target.value) })
+                        }
+                        required
+                        min={0}
+                     />
+                  </div>
+                  <div>
+                     <Label htmlFor='coinType'>Coin Type *</Label>
+                     <Select
+                        value={formData.coinType}
+                        onValueChange={(value) =>
+                           setFormData({
+                              ...formData,
+                              coinType: value as "coin" | "diamond",
+                           })
+                        }
+                     >
+                        <SelectTrigger>
+                           <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value='coin'>Coin</SelectItem>
+                           <SelectItem value='diamond'>Diamond</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </div>
+               </div>
+
+               <div className='space-y-3'>
+                  <Label htmlFor='image'>Image</Label>
+                  {imagePreview ? (
+                     <div className='space-y-2'>
+                        <img
+                           src={imagePreview}
+                           alt='Preview'
+                           className='w-32 h-32 object-cover rounded-lg border'
+                        />
+                        <Button
+                           type='button'
+                           variant='outline'
+                           size='sm'
+                           onClick={() => {
+                              setImageFile(null)
+                              setImagePreview(null)
+                           }}
+                        >
+                           Remove
+                        </Button>
+                     </div>
+                  ) : imageUrlData?.url ? (
+                     <div className='space-y-2'>
+                        <img
+                           src={imageUrlData.url}
+                           alt='Current'
+                           className='w-32 h-32 object-cover rounded-lg border'
+                        />
+                        <p className='text-xs text-gray-500'>Current image</p>
+                     </div>
+                  ) : null}
+                  <Input
+                     id='image'
+                     type='file'
+                     accept='image/*'
+                     onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  />
+               </div>
+
+               <div>
+                  <Label htmlFor='animation'>Animation (JSON)</Label>
+                  <Input
+                     id='animation'
+                     type='file'
+                     accept='.json'
+                     onChange={(e) => setAnimationFile(e.target.files?.[0] || null)}
+                  />
+                  {formData.emogiAnimationUrl && !animationFile && (
+                     <p className='text-xs text-gray-500 mt-1'>
+                        Current: {formData.emogiAnimationUrl.split("/").pop()}
+                     </p>
+                  )}
+               </div>
+
+               <div className='flex gap-2 justify-end pt-4'>
+                  <Button type='button' variant='outline' onClick={() => setOpen(false)}>
+                     Cancel
+                  </Button>
+                  <Button type='submit' disabled={isUpdating}>
+                     {isUpdating ? "Updating..." : "Update Emoji"}
+                  </Button>
+               </div>
+            </form>
+         </DialogContent>
+      </Dialog>
+   )
+}
+
+function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
+   const [open, setOpen] = useState(false)
+   const [formData, setFormData] = useState({
+      price: 1000,
+      coinType: "coin" as "coin" | "diamond",
+   })
+   const [imageFile, setImageFile] = useState<File | null>(null)
+   const [animationFile, setAnimationFile] = useState<File | null>(null)
+   const [imagePreview, setImagePreview] = useState<string | null>(null)
+
+   const { trigger: addTrigger, isMutating: isAdding } = useAddEmoji()
+   const { trigger: uploadTrigger } = useUploadFile()
+   const { mutate } = useAppConfig()
+
+   useEffect(() => {
+      if (imageFile) {
+         const reader = new FileReader()
+         reader.onloadend = () => {
+            setImagePreview(reader.result as string)
+         }
+         reader.readAsDataURL(imageFile)
+      } else {
+         setImagePreview(null)
+      }
+   }, [imageFile])
+
+   const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+
+      if (!imageFile) {
+         toast.error("Please select an image file")
+         return
+      }
+
+      try {
+         // Upload image
+         const imageRes = await uploadTrigger({ file: imageFile, type: "image" })
+
+         // Upload animation if provided
+         let animationKey = ""
+         if (animationFile) {
+            const animationRes = await uploadTrigger({
+               file: animationFile,
+               type: "animation",
+            })
+            animationKey = animationRes.key
+         }
+
+         await addTrigger({
+            price: formData.price,
+            coinType: formData.coinType,
+            emogiPicUrl: imageRes.key,
+            emogiAnimationUrl: animationKey,
+         })
+
+         toast.success("Emoji added successfully")
+         setOpen(false)
+         setFormData({ price: 1000, coinType: "coin" })
+         setImageFile(null)
+         setAnimationFile(null)
+         setImagePreview(null)
+         mutate()
+         onEmojiAdded()
+      } catch (error: any) {
+         toast.error(error.message || "Failed to add emoji")
+      }
+   }
+
+   return (
+      <Dialog open={open} onOpenChange={setOpen}>
+         <DialogTrigger asChild>
+            <Button variant='outline' className='flex items-center gap-2 text-black'>
+               <PlusCircle className='h-4 w-4' />
+               Add Emoji
+            </Button>
+         </DialogTrigger>
+         <DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto'>
+            <DialogHeader>
+               <DialogTitle className='text-xl'>Add New Emoji</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className='space-y-5'>
+               <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                     <Label htmlFor='new-price'>Price *</Label>
+                     <Input
+                        id='new-price'
+                        type='number'
+                        value={formData.price}
+                        onChange={(e) =>
+                           setFormData({ ...formData, price: Number(e.target.value) })
+                        }
+                        required
+                        min={0}
+                     />
+                  </div>
+                  <div>
+                     <Label htmlFor='new-coinType'>Coin Type *</Label>
+                     <Select
+                        value={formData.coinType}
+                        onValueChange={(value) =>
+                           setFormData({
+                              ...formData,
+                              coinType: value as "coin" | "diamond",
+                           })
+                        }
+                     >
+                        <SelectTrigger>
+                           <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value='coin'>Coin</SelectItem>
+                           <SelectItem value='diamond'>Diamond</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </div>
+               </div>
+
+               <div className='space-y-3'>
+                  <Label htmlFor='new-image'>Image *</Label>
+                  {imagePreview && (
+                     <div>
+                        <img
+                           src={imagePreview}
+                           alt='Preview'
+                           className='w-32 h-32 object-cover rounded-lg border'
+                        />
+                     </div>
+                  )}
+                  <Input
+                     id='new-image'
+                     type='file'
+                     accept='image/*'
+                     onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                     required
+                  />
+               </div>
+
+               <div>
+                  <Label htmlFor='new-animation'>Animation (JSON)</Label>
+                  <Input
+                     id='new-animation'
+                     type='file'
+                     accept='.json'
+                     onChange={(e) => setAnimationFile(e.target.files?.[0] || null)}
+                  />
+               </div>
+
+               <div className='flex gap-2 justify-end pt-4'>
+                  <Button type='button' variant='outline' onClick={() => setOpen(false)}>
+                     Cancel
+                  </Button>
+                  <Button type='submit' disabled={isAdding}>
+                     {isAdding ? "Adding..." : "Add Emoji"}
+                  </Button>
+               </div>
+            </form>
+         </DialogContent>
+      </Dialog>
+   )
+}
+
+// General Settings Component
+function GeneralSettings({ config, onUpdate }: { config: any; onUpdate: () => void }) {
+   const [formData, setFormData] = useState({
+      appName: config?.appName || "",
+      version: config?.version || "",
+      maintenanceMode: config?.maintenanceMode || false,
+      guestAllowed: config?.guestAllowed || false,
+      freeUpdate: config?.freeUpdate || false,
+      freeCoin: config?.freeCoin || false,
+      initialCons: config?.initialCons || 0,
+   })
+
+   const { trigger: updateTrigger, isMutating } = useUpdateAppConfig()
+   const { mutate } = useAppConfig()
+
+   const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+      try {
+         await updateTrigger(formData)
+         toast.success("General settings updated successfully")
+         mutate()
+         onUpdate()
+      } catch (error: any) {
+         toast.error(error.message || "Failed to update settings")
+      }
+   }
+
+   return (
+      <Card>
+         <CardHeader>
+            <CardTitle>General Settings</CardTitle>
+            <CardDescription>Basic app configuration settings</CardDescription>
+         </CardHeader>
+         <CardContent>
+            <form onSubmit={handleSubmit} className='space-y-4'>
+               <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                     <Label htmlFor='appName'>App Name</Label>
+                     <Input
+                        id='appName'
+                        value={formData.appName}
+                        onChange={(e) =>
+                           setFormData({ ...formData, appName: e.target.value })
+                        }
+                     />
+                  </div>
+                  <div>
+                     <Label htmlFor='version'>Version</Label>
+                     <Input
+                        id='version'
+                        value={formData.version}
+                        onChange={(e) =>
+                           setFormData({ ...formData, version: e.target.value })
+                        }
+                     />
+                  </div>
+               </div>
+
+               <div>
+                  <Label htmlFor='initialCons'>Initial Cons</Label>
+                  <Input
+                     id='initialCons'
+                     type='number'
+                     value={formData.initialCons}
+                     onChange={(e) =>
+                        setFormData({ ...formData, initialCons: Number(e.target.value) })
+                     }
+                     min={0}
+                  />
+               </div>
+
+               <div className='space-y-3'>
+                  <div className='flex items-center gap-3'>
+                     <Checkbox
+                        id='maintenanceMode'
+                        checked={formData.maintenanceMode}
+                        onCheckedChange={(checked) =>
+                           setFormData({
+                              ...formData,
+                              maintenanceMode: checked as boolean,
+                           })
+                        }
+                     />
+                     <Label htmlFor='maintenanceMode' className='cursor-pointer'>
+                        Maintenance Mode
+                     </Label>
+                  </div>
+
+                  <div className='flex items-center gap-3'>
+                     <Checkbox
+                        id='guestAllowed'
+                        checked={formData.guestAllowed}
+                        onCheckedChange={(checked) =>
+                           setFormData({ ...formData, guestAllowed: checked as boolean })
+                        }
+                     />
+                     <Label htmlFor='guestAllowed' className='cursor-pointer'>
+                        Guest Allowed
+                     </Label>
+                  </div>
+
+                  <div className='flex items-center gap-3'>
+                     <Checkbox
+                        id='freeUpdate'
+                        checked={formData.freeUpdate}
+                        onCheckedChange={(checked) =>
+                           setFormData({ ...formData, freeUpdate: checked as boolean })
+                        }
+                     />
+                     <Label htmlFor='freeUpdate' className='cursor-pointer'>
+                        Free Update
+                     </Label>
+                  </div>
+
+                  <div className='flex items-center gap-3'>
+                     <Checkbox
+                        id='freeCoin'
+                        checked={formData.freeCoin}
+                        onCheckedChange={(checked) =>
+                           setFormData({ ...formData, freeCoin: checked as boolean })
+                        }
+                     />
+                     <Label htmlFor='freeCoin' className='cursor-pointer'>
+                        Free Coin
+                     </Label>
+                  </div>
+               </div>
+
+               <div className='flex justify-end'>
+                  <Button type='submit' disabled={isMutating}>
+                     <Save className='h-4 w-4 mr-2' />
+                     {isMutating ? "Saving..." : "Save Changes"}
+                  </Button>
+               </div>
+            </form>
+         </CardContent>
+      </Card>
+   )
+}
+
+// Bonus Settings Component
+function BonusSettings({ config, onUpdate }: { config: any; onUpdate: () => void }) {
+   const [formData, setFormData] = useState({
+      dailyBonusCons: config?.dailyBonusCons || 0,
+      dailyBonusIntervalHours: config?.dailyBonusIntervalHours || 24,
+      dailyBonusEnabled: config?.dailyBonusEnabled || false,
+      dailyBonusAmount: config?.dailyBonusAmount || 0,
+      referralBonusCons: config?.referralBonusCons || 0,
+      referralBonusEnabled: config?.referralBonusEnabled || false,
+      referralBonusLimitPerUser: config?.referralBonusLimitPerUser || 0,
+   })
+
+   const { trigger: updateTrigger, isMutating } = useUpdateAppConfig()
+   const { mutate } = useAppConfig()
+
+   const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+      try {
+         await updateTrigger(formData)
+         toast.success("Bonus settings updated successfully")
+         mutate()
+         onUpdate()
+      } catch (error: any) {
+         toast.error(error.message || "Failed to update settings")
+      }
+   }
+
+   return (
+      <Card>
+         <CardHeader>
+            <CardTitle>Bonus Settings</CardTitle>
+            <CardDescription>Configure daily and referral bonus settings</CardDescription>
+         </CardHeader>
+         <CardContent>
+            <form onSubmit={handleSubmit} className='space-y-6'>
+               <div>
+                  <h3 className='text-sm font-semibold mb-3'>Daily Bonus</h3>
+                  <div className='space-y-4 pl-4 border-l-2'>
+                     <div className='flex items-center gap-3'>
+                        <Checkbox
+                           id='dailyBonusEnabled'
+                           checked={formData.dailyBonusEnabled}
+                           onCheckedChange={(checked) =>
+                              setFormData({
+                                 ...formData,
+                                 dailyBonusEnabled: checked as boolean,
+                              })
+                           }
+                        />
+                        <Label htmlFor='dailyBonusEnabled' className='cursor-pointer'>
+                           Enable Daily Bonus
+                        </Label>
+                     </div>
+                     <div className='grid grid-cols-2 gap-4'>
+                        <div>
+                           <Label htmlFor='dailyBonusCons'>Daily Bonus Cons</Label>
+                           <Input
+                              id='dailyBonusCons'
+                              type='number'
+                              value={formData.dailyBonusCons}
+                              onChange={(e) =>
+                                 setFormData({
+                                    ...formData,
+                                    dailyBonusCons: Number(e.target.value),
+                                 })
+                              }
+                              min={0}
+                           />
+                        </div>
+                        <div>
+                           <Label htmlFor='dailyBonusAmount'>Daily Bonus Amount</Label>
+                           <Input
+                              id='dailyBonusAmount'
+                              type='number'
+                              value={formData.dailyBonusAmount}
+                              onChange={(e) =>
+                                 setFormData({
+                                    ...formData,
+                                    dailyBonusAmount: Number(e.target.value),
+                                 })
+                              }
+                              min={0}
+                           />
+                        </div>
+                     </div>
+                     <div>
+                        <Label htmlFor='dailyBonusIntervalHours'>
+                           Interval Hours (Default: 24)
+                        </Label>
+                        <Input
+                           id='dailyBonusIntervalHours'
+                           type='number'
+                           value={formData.dailyBonusIntervalHours}
+                           onChange={(e) =>
+                              setFormData({
+                                 ...formData,
+                                 dailyBonusIntervalHours: Number(e.target.value),
+                              })
+                           }
+                           min={1}
+                        />
+                     </div>
+                  </div>
+               </div>
+
+               <div>
+                  <h3 className='text-sm font-semibold mb-3'>Referral Bonus</h3>
+                  <div className='space-y-4 pl-4 border-l-2'>
+                     <div className='flex items-center gap-3'>
+                        <Checkbox
+                           id='referralBonusEnabled'
+                           checked={formData.referralBonusEnabled}
+                           onCheckedChange={(checked) =>
+                              setFormData({
+                                 ...formData,
+                                 referralBonusEnabled: checked as boolean,
+                              })
+                           }
+                        />
+                        <Label htmlFor='referralBonusEnabled' className='cursor-pointer'>
+                           Enable Referral Bonus
+                        </Label>
+                     </div>
+                     <div className='grid grid-cols-2 gap-4'>
+                        <div>
+                           <Label htmlFor='referralBonusCons'>Referral Bonus Cons</Label>
+                           <Input
+                              id='referralBonusCons'
+                              type='number'
+                              value={formData.referralBonusCons}
+                              onChange={(e) =>
+                                 setFormData({
+                                    ...formData,
+                                    referralBonusCons: Number(e.target.value),
+                                 })
+                              }
+                              min={0}
+                           />
+                        </div>
+                        <div>
+                           <Label htmlFor='referralBonusLimitPerUser'>
+                              Limit Per User
+                           </Label>
+                           <Input
+                              id='referralBonusLimitPerUser'
+                              type='number'
+                              value={formData.referralBonusLimitPerUser}
+                              onChange={(e) =>
+                                 setFormData({
+                                    ...formData,
+                                    referralBonusLimitPerUser: Number(e.target.value),
+                                 })
+                              }
+                              min={0}
+                           />
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div className='flex justify-end'>
+                  <Button type='submit' disabled={isMutating}>
+                     <Save className='h-4 w-4 mr-2' />
+                     {isMutating ? "Saving..." : "Save Changes"}
+                  </Button>
+               </div>
+            </form>
+         </CardContent>
+      </Card>
+   )
+}
+
+// Store Config Component
+function StoreConfig({ config, onUpdate }: { config: any; onUpdate: () => void }) {
+   const [formData, setFormData] = useState({
+      appleStoreConfig: {
+         isEnabled: config?.appleStoreConfig?.isEnabled || false,
+         appId: config?.appleStoreConfig?.appId || "",
+         appUrl: config?.appleStoreConfig?.appUrl || "",
+      },
+      googlePlayConfig: {
+         isEnabled: config?.googlePlayConfig?.isEnabled || false,
+         appId: config?.googlePlayConfig?.appId || "",
+         appUrl: config?.googlePlayConfig?.appUrl || "",
+      },
+   })
+
+   const { trigger: updateTrigger, isMutating } = useUpdateAppConfig()
+   const { mutate } = useAppConfig()
+
+   const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+      try {
+         await updateTrigger(formData)
+         toast.success("Store settings updated successfully")
+         mutate()
+         onUpdate()
+      } catch (error: any) {
+         toast.error(error.message || "Failed to update settings")
+      }
+   }
+
+   return (
+      <div className='space-y-4'>
+         <Card>
+            <CardHeader>
+               <CardTitle>Apple Store Config</CardTitle>
+               <CardDescription>Configure Apple App Store settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+               <form onSubmit={handleSubmit} className='space-y-4'>
+                  <div className='flex items-center gap-3'>
+                     <Checkbox
+                        id='appleEnabled'
+                        checked={formData.appleStoreConfig.isEnabled}
+                        onCheckedChange={(checked) =>
+                           setFormData({
+                              ...formData,
+                              appleStoreConfig: {
+                                 ...formData.appleStoreConfig,
+                                 isEnabled: checked as boolean,
+                              },
+                           })
+                        }
+                     />
+                     <Label htmlFor='appleEnabled' className='cursor-pointer'>
+                        Enable Apple Store
+                     </Label>
+                  </div>
+                  <div>
+                     <Label htmlFor='appleAppId'>App ID</Label>
+                     <Input
+                        id='appleAppId'
+                        value={formData.appleStoreConfig.appId}
+                        onChange={(e) =>
+                           setFormData({
+                              ...formData,
+                              appleStoreConfig: {
+                                 ...formData.appleStoreConfig,
+                                 appId: e.target.value,
+                              },
+                           })
+                        }
+                     />
+                  </div>
+                  <div>
+                     <Label htmlFor='appleAppUrl'>App URL</Label>
+                     <Input
+                        id='appleAppUrl'
+                        value={formData.appleStoreConfig.appUrl}
+                        onChange={(e) =>
+                           setFormData({
+                              ...formData,
+                              appleStoreConfig: {
+                                 ...formData.appleStoreConfig,
+                                 appUrl: e.target.value,
+                              },
+                           })
+                        }
+                     />
+                  </div>
+               </form>
+            </CardContent>
+         </Card>
+
+         <Card>
+            <CardHeader>
+               <CardTitle>Google Play Config</CardTitle>
+               <CardDescription>Configure Google Play Store settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+               <div className='space-y-4'>
+                  <div className='flex items-center gap-3'>
+                     <Checkbox
+                        id='googleEnabled'
+                        checked={formData.googlePlayConfig.isEnabled}
+                        onCheckedChange={(checked) =>
+                           setFormData({
+                              ...formData,
+                              googlePlayConfig: {
+                                 ...formData.googlePlayConfig,
+                                 isEnabled: checked as boolean,
+                              },
+                           })
+                        }
+                     />
+                     <Label htmlFor='googleEnabled' className='cursor-pointer'>
+                        Enable Google Play
+                     </Label>
+                  </div>
+                  <div>
+                     <Label htmlFor='googleAppId'>App ID</Label>
+                     <Input
+                        id='googleAppId'
+                        value={formData.googlePlayConfig.appId}
+                        onChange={(e) =>
+                           setFormData({
+                              ...formData,
+                              googlePlayConfig: {
+                                 ...formData.googlePlayConfig,
+                                 appId: e.target.value,
+                              },
+                           })
+                        }
+                     />
+                  </div>
+                  <div>
+                     <Label htmlFor='googleAppUrl'>App URL</Label>
+                     <Input
+                        id='googleAppUrl'
+                        value={formData.googlePlayConfig.appUrl}
+                        onChange={(e) =>
+                           setFormData({
+                              ...formData,
+                              googlePlayConfig: {
+                                 ...formData.googlePlayConfig,
+                                 appUrl: e.target.value,
+                              },
+                           })
+                        }
+                     />
+                  </div>
+               </div>
+            </CardContent>
+         </Card>
+
+         <div className='flex justify-end'>
+            <Button onClick={handleSubmit} disabled={isMutating}>
+               <Save className='h-4 w-4 mr-2' />
+               {isMutating ? "Saving..." : "Save All Changes"}
+            </Button>
+         </div>
+      </div>
+   )
+}
+
+export default function AppConfigPage() {
+   const router = useRouter()
+   const user = useAuthStore((s) => s.user)
+   const getUserType = useAuthStore((s) => s.getUserType)
+   const setTitle = useAuthStore((t) => t.setTitle)
+   const { data, isLoading, mutate } = useAppConfig()
+
+   const userType = getUserType()
+   const config = data?.data || {}
+
+   useEffect(() => {
+      setTitle("App Configuration")
+      if (userType && !["admin"].includes(userType)) {
+         router.replace("/")
+      }
+   }, [userType, router, setTitle])
+
+   if (isLoading) {
+      return (
+         <div className='flex items-center justify-center h-screen'>
+            <div className='text-lg'>Loading...</div>
+         </div>
+      )
+   }
+
+   return (
+      <div className='p-8 space-y-6'>
+         <div className='flex items-center gap-2'>
+            <Settings className='h-6 w-6' />
+            <h1 className='text-3xl font-bold'>App Configuration</h1>
+         </div>
+
+         <Tabs defaultValue='general' className='w-full '>
+            <TabsList className='grid w-full grid-cols-4 bg-secondary/90 rounded-md'>
+               <TabsTrigger value='general'>General</TabsTrigger>
+               <TabsTrigger value='bonus'>Bonus Settings</TabsTrigger>
+               <TabsTrigger value='store'>Store Config</TabsTrigger>
+               <TabsTrigger value='emojis'>Emojis</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value='general' className='space-y-4 mt-6'>
+               <GeneralSettings config={config} onUpdate={() => mutate()} />
+            </TabsContent>
+
+            <TabsContent value='bonus' className='space-y-4 mt-6'>
+               <BonusSettings config={config} onUpdate={() => mutate()} />
+            </TabsContent>
+
+            <TabsContent value='store' className='space-y-4 mt-6'>
+               <StoreConfig config={config} onUpdate={() => mutate()} />
+            </TabsContent>
+
+            <TabsContent value='emojis' className='space-y-4 mt-6'>
+               <Card>
+                  <CardHeader className='flex flex-row items-center justify-between'>
+                     <div>
+                        <CardTitle>Emoji Management</CardTitle>
+                        <CardDescription>Manage emoji configurations</CardDescription>
+                     </div>
+                     <AddEmojiDialog onEmojiAdded={() => mutate()} />
+                  </CardHeader>
+                  <CardContent>
+                     <DataTable
+                        data={config?.imogi || []}
+                        columns={columns}
+                        paginationConfig={{ pageIndex: 0, pageSize: 15 }}
+                        rowClickable={false}
+                     />
+                  </CardContent>
+               </Card>
+            </TabsContent>
+         </Tabs>
+      </div>
+   )
+}

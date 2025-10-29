@@ -13,6 +13,8 @@ export function LoginHistoryCard({ logins }: LoginHistoryCardProps) {
     (a, b) => new Date(b).getTime() - new Date(a).getTime()
   );
 
+  console.log("Sorted Logins:", sortedLogins);
+
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader className="shrink-0">
@@ -29,7 +31,7 @@ export function LoginHistoryCard({ logins }: LoginHistoryCardProps) {
           sortedLogins.map((timestamp, index) => (
             <div key={index} className="flex items-center gap-3 text-sm">
               <ClockIcon className="w-4 h-4 text-muted-foreground" />
-              <span>{format(new Date(timestamp), "PPPp")}</span>
+              <span>{index} : {timestamp}</span>
             </div>
           ))
         )}
