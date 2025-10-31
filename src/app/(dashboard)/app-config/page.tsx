@@ -1058,7 +1058,7 @@ export default function AppConfigPage() {
                   </CardHeader>
                   <CardContent>
                      <DataTable
-                        data={config?.imogi || []}
+                        data={config?.emogi || []}
                         columns={columns}
                         paginationConfig={{ pageIndex: 0, pageSize: 15 }}
                         rowClickable={false}
