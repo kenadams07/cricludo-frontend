@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ColumnDef } from "@tanstack/react-table"
@@ -51,6 +51,7 @@ const schema = z.object({
    coinType: z.enum(["coin", "diamond"]),
    emogiPicUrl: z.string().optional(),
    emogiAnimationUrl: z.string().optional(),
+   order: z.number().optional(),
    createdAt: z.string(),
 })
 
@@ -126,6 +127,214 @@ const columns: ColumnDef<Emoji>[] = [
    },
 ]
 
+// Emoji Card Component
+function EmojiCard({ emoji }: { emoji: Emoji }) {
+   const [openDetail, setOpenDetail] = useState(false)
+   const { data: imageUrlData } = useGetFileUrl(emoji.emogiPicUrl || "")
+
+   return (
+      <>
+         <div
+            onClick={() => setOpenDetail(true)}
+            className='group relative cursor-pointer bg-card border rounded-lg p-4 hover:shadow-lg transition-shadow'
+         >
+            <div className='aspect-square mb-3 relative overflow-hidden rounded-md bg-muted'>
+               {imageUrlData?.url ? (
+                  <img
+                     src={imageUrlData.url}
+                     alt={emoji.id}
+                     className='w-full h-full object-cover'
+                  />
+               ) : (
+                  <div className='w-full h-full flex items-center justify-center text-muted-foreground'>
+                     No Image
+                  </div>
+               )}
+            </div>
+            <div className='space-y-1'>
+               <div className='font-semibold text-sm'>ID: {emoji.id}</div>
+               <div className='text-xs text-muted-foreground'>
+                  {emoji.price.toLocaleString()} {emoji.coinType}
+               </div>
+            </div>
+            <div className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+               <span
+                  className={`px-2 py-0.5 rounded text-xs font-medium ${
+                     emoji.coinType === "coin"
+                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                  }`}
+               >
+                  {emoji.coinType}
+               </span>
+            </div>
+         </div>
+
+         <EmojiDetailDialog
+            emoji={emoji}
+            open={openDetail}
+            onOpenChange={setOpenDetail}
+         />
+      </>
+   )
+}
+
+// Emoji Grid Component
+function EmojiGrid({ data }: { data: Emoji[] }) {
+   // Sort by order when data changes from server
+   const sortedData = useMemo(() => {
+      const validData = data.filter((item) => {
+         if (!item || !item.id) return false
+         const id = String(item.id).trim()
+         return id !== "" && id !== "undefined" && id !== "null"
+      })
+      return [...validData].sort((a, b) => (a.order || 0) - (b.order || 0))
+   }, [data])
+
+   if (sortedData.length === 0) {
+      return (
+         <div className='text-center py-12 text-muted-foreground'>
+            No emojis yet. Click "Add Emoji" to create your first one.
+         </div>
+      )
+   }
+
+   return (
+      <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4'>
+         {sortedData.map((emoji) => (
+            <EmojiCard key={String(emoji.id)} emoji={emoji} />
+         ))}
+      </div>
+   )
+}
+
+// Emoji Detail Dialog Component
+function EmojiDetailDialog({
+   emoji,
+   open,
+   onOpenChange,
+}: {
+   emoji: Emoji
+   open: boolean
+   onOpenChange: (open: boolean) => void
+}) {
+   const { data: imageUrlData } = useGetFileUrl(emoji.emogiPicUrl || "")
+   const { data: animationUrlData } = useGetFileUrl(emoji.emogiAnimationUrl || "")
+   const { trigger: deleteTrigger, isMutating: isDeleting } = useDeleteEmoji(emoji.id)
+   const { mutate } = useAppConfig()
+
+   const handleDelete = async () => {
+      if (!confirm(`Are you sure you want to delete emoji ${emoji.id}?`)) {
+         return
+      }
+
+      try {
+         await deleteTrigger()
+         toast.success("Emoji deleted successfully")
+         mutate()
+         onOpenChange(false)
+      } catch (error: any) {
+         toast.error(error.message || "Failed to delete emoji")
+      }
+   }
+
+   return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+         <DialogContent className='sm:max-w-2xl'>
+            <DialogHeader>
+               <DialogTitle className='text-xl'>Emoji Details</DialogTitle>
+            </DialogHeader>
+            <div className='space-y-6'>
+               <div className='grid grid-cols-2 gap-6'>
+                  <div>
+                     <Label className='text-sm font-medium text-muted-foreground'>
+                        ID
+                     </Label>
+                     <div className='mt-1 font-semibold'>{emoji.id}</div>
+                  </div>
+                  <div>
+                     <Label className='text-sm font-medium text-muted-foreground'>
+                        Price
+                     </Label>
+                     <div className='mt-1 font-semibold'>
+                        {emoji.price.toLocaleString()}
+                     </div>
+                  </div>
+                  <div>
+                     <Label className='text-sm font-medium text-muted-foreground'>
+                        Coin Type
+                     </Label>
+                     <div className='mt-1'>
+                        <span
+                           className={`px-2 py-1 rounded text-xs font-medium ${
+                              emoji.coinType === "coin"
+                                 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                 : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                           }`}
+                        >
+                           {emoji.coinType}
+                        </span>
+                     </div>
+                  </div>
+                  <div>
+                     <Label className='text-sm font-medium text-muted-foreground'>
+                        Created At
+                     </Label>
+                     <div className='mt-1 text-sm'>
+                        {format(new Date(emoji.createdAt), "yyyy-MM-dd HH:mm")}
+                     </div>
+                  </div>
+               </div>
+
+               <div>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                     Image
+                  </Label>
+                  <div className='mt-2'>
+                     {imageUrlData?.url ? (
+                        <img
+                           src={imageUrlData.url}
+                           alt={emoji.id}
+                           className='w-full max-w-xs h-auto rounded-lg border'
+                        />
+                     ) : (
+                        <div className='text-sm text-muted-foreground'>
+                           No image available
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+               <div>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                     Animation
+                  </Label>
+                  <div className='mt-2'>
+                     {animationUrlData?.url ? (
+                        <div className='text-sm text-blue-600 dark:text-blue-400'>
+                           {emoji.emogiAnimationUrl?.split("/").pop() || "Animation file"}
+                        </div>
+                     ) : (
+                        <div className='text-sm text-muted-foreground'>
+                           No animation file
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+               <div className='flex gap-2 justify-end pt-4 border-t'>
+                  <EditEmojiDialog emoji={emoji} onClose={() => onOpenChange(false)} />
+                  <Button variant='outline' onClick={handleDelete} disabled={isDeleting}>
+                     <Trash2 className='h-4 w-4 mr-2' />
+                     {isDeleting ? "Deleting..." : "Delete"}
+                  </Button>
+               </div>
+            </div>
+         </DialogContent>
+      </Dialog>
+   )
+}
+
 function ImagePreview({ s3Key }: { s3Key: string }) {
    const { data } = useGetFileUrl(s3Key)
 
@@ -173,7 +382,7 @@ function EmojiActions({ emoji }: { emoji: Emoji }) {
    )
 }
 
-function EditEmojiDialog({ emoji }: { emoji: Emoji }) {
+function EditEmojiDialog({ emoji, onClose }: { emoji: Emoji; onClose?: () => void }) {
    const [open, setOpen] = useState(false)
    const [formData, setFormData] = useState({
       price: emoji.price,
@@ -237,6 +446,9 @@ function EditEmojiDialog({ emoji }: { emoji: Emoji }) {
          setAnimationFile(null)
          setImagePreview(null)
          mutate()
+         if (onClose) {
+            onClose()
+         }
       } catch (error: any) {
          toast.error(error.message || "Failed to update emoji")
       }
@@ -361,6 +573,7 @@ function EditEmojiDialog({ emoji }: { emoji: Emoji }) {
 function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
    const [open, setOpen] = useState(false)
    const [formData, setFormData] = useState({
+      id: "",
       price: 1000,
       coinType: "coin" as "coin" | "diamond",
    })
@@ -370,7 +583,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
 
    const { trigger: addTrigger, isMutating: isAdding } = useAddEmoji()
    const { trigger: uploadTrigger } = useUploadFile()
-   const { mutate } = useAppConfig()
+   const { mutate, data } = useAppConfig()
 
    useEffect(() => {
       if (imageFile) {
@@ -387,8 +600,20 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault()
 
+      if (!formData.id.trim()) {
+         toast.error("Please enter a unique ID")
+         return
+      }
+
       if (!imageFile) {
          toast.error("Please select an image file")
+         return
+      }
+
+      // Check if ID already exists
+      const existingIds = (data?.data?.emogi || []).map((e: Emoji) => e.id)
+      if (existingIds.includes(formData.id)) {
+         toast.error(`ID "${formData.id}" already exists. Please use a unique ID.`)
          return
       }
 
@@ -407,6 +632,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
          }
 
          await addTrigger({
+            id: formData.id.trim(),
             price: formData.price,
             coinType: formData.coinType,
             emogiPicUrl: imageRes.key,
@@ -415,7 +641,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
 
          toast.success("Emoji added successfully")
          setOpen(false)
-         setFormData({ price: 1000, coinType: "coin" })
+         setFormData({ id: "", price: 1000, coinType: "coin" })
          setImageFile(null)
          setAnimationFile(null)
          setImagePreview(null)
@@ -439,6 +665,18 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                <DialogTitle className='text-xl'>Add New Emoji</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className='space-y-5'>
+               <div>
+                  <Label htmlFor='new-id'>ID * (Must be unique)</Label>
+                  <Input
+                     id='new-id'
+                     type='text'
+                     value={formData.id}
+                     onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                     required
+                     placeholder='e.g., emoji-1'
+                     disabled={isAdding}
+                  />
+               </div>
                <div className='grid grid-cols-2 gap-4'>
                   <div>
                      <Label htmlFor='new-price'>Price *</Label>
@@ -451,6 +689,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                         }
                         required
                         min={0}
+                        disabled={isAdding}
                      />
                   </div>
                   <div>
@@ -463,6 +702,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                               coinType: value as "coin" | "diamond",
                            })
                         }
+                        disabled={isAdding}
                      >
                         <SelectTrigger>
                            <SelectValue />
@@ -492,6 +732,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                      accept='image/*'
                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                      required
+                     disabled={isAdding}
                   />
                </div>
 
@@ -502,6 +743,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                      type='file'
                      accept='.json'
                      onChange={(e) => setAnimationFile(e.target.files?.[0] || null)}
+                     disabled={isAdding}
                   />
                </div>
 
@@ -1052,17 +1294,14 @@ export default function AppConfigPage() {
                   <CardHeader className='flex flex-row items-center justify-between'>
                      <div>
                         <CardTitle>Emoji Management</CardTitle>
-                        <CardDescription>Manage emoji configurations</CardDescription>
+                        <CardDescription>
+                           Manage emoji configurations. Click to view details.
+                        </CardDescription>
                      </div>
                      <AddEmojiDialog onEmojiAdded={() => mutate()} />
                   </CardHeader>
                   <CardContent>
-                     <DataTable
-                        data={config?.emogi || []}
-                        columns={columns}
-                        paginationConfig={{ pageIndex: 0, pageSize: 15 }}
-                        rowClickable={false}
-                     />
+                     <EmojiGrid data={config?.emogi || []} />
                   </CardContent>
                </Card>
             </TabsContent>
