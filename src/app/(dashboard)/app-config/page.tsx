@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ColumnDef } from "@tanstack/react-table"
+import Lottie from "lottie-react"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/authStore"
 import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
@@ -288,39 +290,49 @@ function EmojiDetailDialog({
                   </div>
                </div>
 
-               <div>
-                  <Label className='text-sm font-medium text-muted-foreground'>
-                     Image
-                  </Label>
-                  <div className='mt-2'>
-                     {imageUrlData?.url ? (
-                        <img
-                           src={imageUrlData.url}
-                           alt={emoji.id}
-                           className='w-full max-w-xs h-auto rounded-lg border'
-                        />
-                     ) : (
-                        <div className='text-sm text-muted-foreground'>
-                           No image available
-                        </div>
-                     )}
+               <div className='grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start'>
+                  <div>
+                     <Label className='text-sm font-medium text-muted-foreground'>
+                        Image
+                     </Label>
+                     <div className='mt-2'>
+                        {imageUrlData?.url ? (
+                           <img
+                              src={imageUrlData.url}
+                              alt={emoji.id}
+                              className='w-full max-w-xs h-auto rounded-lg border'
+                           />
+                        ) : (
+                           <div className='text-sm text-muted-foreground'>
+                              No image available
+                           </div>
+                        )}
+                     </div>
                   </div>
-               </div>
 
-               <div>
-                  <Label className='text-sm font-medium text-muted-foreground'>
-                     Animation
-                  </Label>
-                  <div className='mt-2'>
-                     {animationUrlData?.url ? (
-                        <div className='text-sm text-blue-600 dark:text-blue-400'>
-                           {emoji.emogiAnimationUrl?.split("/").pop() || "Animation file"}
-                        </div>
-                     ) : (
-                        <div className='text-sm text-muted-foreground'>
-                           No animation file
-                        </div>
-                     )}
+                  <div className='md:pl-2'>
+                     <Label className='text-sm font-medium text-muted-foreground'>
+                        Animation
+                     </Label>
+                     <div className='mt-2 flex flex-col items-start md:items-end space-y-2'>
+                        {animationUrlData?.url ? (
+                           <>
+                              <LottiePreview
+                                 url={animationUrlData.url}
+                                 height={300}
+                                 className='w-full max-w-[300px]'
+                              />
+                              <div className='text-xs text-muted-foreground text-right w-full'>
+                                 {emoji.emogiAnimationUrl?.split("/").pop() ||
+                                    "Animation file"}
+                              </div>
+                           </>
+                        ) : (
+                           <div className='text-sm text-muted-foreground'>
+                              No animation file
+                           </div>
+                        )}
+                     </div>
                   </div>
                </div>
 
@@ -353,6 +365,100 @@ function ImagePreview({ s3Key }: { s3Key: string }) {
             ;(e.target as HTMLImageElement).style.display = "none"
          }}
       />
+   )
+}
+
+type LottiePreviewProps = {
+   url?: string
+   file?: File | null
+   height?: number
+   className?: string
+}
+
+function LottiePreview({ url, file, height = 180, className }: LottiePreviewProps) {
+   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
+      file || url ? "loading" : "idle"
+   )
+   const [animationData, setAnimationData] = useState<any>(null)
+
+   useEffect(() => {
+      let isMounted = true
+
+      const loadAnimation = async () => {
+         if (!file && !url) {
+            setStatus("idle")
+            setAnimationData(null)
+            return
+         }
+
+         setStatus("loading")
+
+         try {
+            let jsonString = ""
+
+            if (file) {
+               jsonString = await file.text()
+            } else if (url) {
+               const response = await fetch(url)
+               if (!response.ok) {
+                  throw new Error(`Failed to fetch animation: ${response.status}`)
+               }
+               jsonString = await response.text()
+            }
+
+            const parsed = JSON.parse(jsonString)
+
+            if (!isMounted) return
+
+            setAnimationData(parsed)
+            setStatus("ready")
+         } catch (error) {
+            console.error("Failed to load animation preview", error)
+            if (!isMounted) return
+            setAnimationData(null)
+            setStatus("error")
+         }
+      }
+
+      loadAnimation()
+
+      return () => {
+         isMounted = false
+      }
+   }, [file, url])
+
+   if (!file && !url) {
+      return <div className='text-sm text-muted-foreground'>No animation available</div>
+   }
+
+   if (status === "loading") {
+      return (
+         <div className='text-sm text-muted-foreground'>Loading animation preview...</div>
+      )
+   }
+
+   if (status === "error") {
+      return (
+         <div className='text-sm text-red-500'>
+            Unable to load animation preview. Please ensure the JSON file is valid.
+         </div>
+      )
+   }
+
+   if (status !== "ready" || !animationData) {
+      return null
+   }
+
+   return (
+      <div
+         className={cn(
+            "flex items-center justify-center rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 p-6",
+            className
+         )}
+         style={{ height }}
+      >
+         <Lottie animationData={animationData} loop autoplay />
+      </div>
    )
 }
 
@@ -399,7 +505,10 @@ function EditEmojiDialog({ emoji, onClose }: { emoji: Emoji; onClose?: () => voi
    const { trigger: updateTrigger, isMutating: isUpdating } = useUpdateEmoji(emoji.id)
    const { trigger: uploadTrigger } = useUploadFile()
    const { mutate } = useAppConfig()
-   const { data: imageUrlData } = useGetFileUrl(formData.emogiPicUrl)
+   const { data: imageUrlData } = useGetFileUrl(formData.emogiPicUrl || "")
+   const { data: animationUrlData } = useGetFileUrl(
+      !animationFile && formData.emogiAnimationUrl ? formData.emogiAnimationUrl : ""
+   )
 
    useEffect(() => {
       if (imageFile) {
@@ -543,7 +652,7 @@ function EditEmojiDialog({ emoji, onClose }: { emoji: Emoji; onClose?: () => voi
                   />
                </div>
 
-               <div>
+               <div className='space-y-3'>
                   <Label htmlFor='animation'>Animation (JSON)</Label>
                   <Input
                      id='animation'
@@ -551,11 +660,19 @@ function EditEmojiDialog({ emoji, onClose }: { emoji: Emoji; onClose?: () => voi
                      accept='.json'
                      onChange={(e) => setAnimationFile(e.target.files?.[0] || null)}
                   />
-                  {formData.emogiAnimationUrl && !animationFile && (
-                     <p className='text-xs text-gray-500 mt-1'>
-                        Current: {formData.emogiAnimationUrl.split("/").pop()}
-                     </p>
-                  )}
+                  <div className='space-y-2'>
+                     <LottiePreview
+                        file={animationFile}
+                        url={!animationFile ? animationUrlData?.url : undefined}
+                        height={150}
+                        className='w-full max-w-[200px]'
+                     />
+                     {formData.emogiAnimationUrl && !animationFile && (
+                        <p className='text-xs text-gray-500'>
+                           Current: {formData.emogiAnimationUrl.split("/").pop()}
+                        </p>
+                     )}
+                  </div>
                </div>
 
                <div className='flex gap-2 justify-end pt-4'>
@@ -719,7 +836,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
 
                <div className='space-y-3'>
                   <Label htmlFor='new-image'>Image *</Label>
-                  {imagePreview && (
+                  {imagePreview ? (
                      <div>
                         <img
                            src={imagePreview}
@@ -727,6 +844,10 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                            className='w-32 h-32 object-cover rounded-lg border'
                         />
                      </div>
+                  ) : (
+                     <p className='text-xs text-muted-foreground'>
+                        Upload an image to preview it here.
+                     </p>
                   )}
                   <Input
                      id='new-image'
@@ -738,7 +859,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                   />
                </div>
 
-               <div>
+               <div className='space-y-2'>
                   <Label htmlFor='new-animation'>Animation (JSON)</Label>
                   <Input
                      id='new-animation'
@@ -746,6 +867,11 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
                      accept='.json'
                      onChange={(e) => setAnimationFile(e.target.files?.[0] || null)}
                      disabled={isAdding}
+                  />
+                  <LottiePreview
+                     file={animationFile}
+                     height={150}
+                     className='w-full max-w-[200px]'
                   />
                </div>
 
