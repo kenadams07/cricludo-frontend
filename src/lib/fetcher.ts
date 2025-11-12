@@ -1,15 +1,23 @@
 export async function fetcher(url: string, options: RequestInit = {}) {
-  const res = await fetch(url, {
+  const isFormData = options.body instanceof FormData;
+  const headers = new Headers(options.headers ?? {});
+
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(url, {
     ...options,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  }); 
+    headers,
+  });
 
+  const contentType = response.headers.get("Content-Type") ?? "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
 
-  return res.json();
+  return response.text();
 }
 
 export async function PostRequest(url: string, { arg }: { arg: any }) {

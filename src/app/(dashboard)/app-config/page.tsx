@@ -47,6 +47,7 @@ import * as z from "zod"
 
 const schema = z.object({
    id: z.string(),
+   _id: z.string(),
    price: z.number(),
    coinType: z.enum(["coin", "diamond"]),
    emogiPicUrl: z.string().optional(),
@@ -198,11 +199,12 @@ function EmojiGrid({ data }: { data: Emoji[] }) {
          </div>
       )
    }
+   console.log("Sorted Emojis:", sortedData)
 
    return (
       <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4'>
          {sortedData.map((emoji) => (
-            <EmojiCard key={String(emoji.id)} emoji={emoji} />
+            <EmojiCard key={String(emoji._id)} emoji={emoji} />
          ))}
       </div>
    )

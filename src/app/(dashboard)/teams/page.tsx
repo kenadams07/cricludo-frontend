@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
 import {
   DndContext,
   DragEndEvent,
@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Loader2, Plus, RefreshCw, Save } from "lucide-react"
+import { GripVertical, Loader2, Pencil, Plus, RefreshCw, Save, Trash2, UploadCloud, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -53,6 +53,9 @@ import {
   TeamPlayer,
   reorderTeamPlayers,
   updateTeamPlayer,
+  updateTeamDetails,
+  UpdateTeamPayload,
+  uploadTeamFlag,
   useCreateTeam,
   useTeams,
 } from "@/hooks/useTeams"
@@ -118,6 +121,37 @@ export default function TeamsPage() {
       const message = err instanceof Error ? err.message : "Failed to create team."
       toast.error(message)
     }
+  }
+
+  const replaceTeamInCache = async (updatedTeam: Team) => {
+    await mutateTeams(
+      (current) => {
+        if (!current) return current
+        return current.map((team) => (team._id === updatedTeam._id ? updatedTeam : team))
+      },
+      false
+    )
+    return updatedTeam
+  }
+
+  const handleUpdateTeamDetails = async (teamId: string, updates: UpdateTeamPayload) => {
+    const cleanedUpdates = Object.fromEntries(
+      Object.entries(updates ?? {}).filter(([, value]) => value !== undefined)
+    )
+
+    if (Object.keys(cleanedUpdates).length === 0) {
+      return teams.find((team) => team._id === teamId) ?? null
+    }
+
+    const updatedTeam = await updateTeamDetails(teamId, cleanedUpdates as UpdateTeamPayload)
+    await replaceTeamInCache(updatedTeam)
+    return updatedTeam
+  }
+
+  const handleUploadFlag = async (teamId: string, file: File) => {
+    const updatedTeam = await uploadTeamFlag(teamId, file)
+    await replaceTeamInCache(updatedTeam)
+    return updatedTeam
   }
 
   const handleReorderPlayers = async (teamId: string, players: TeamPlayer[]) => {
@@ -300,8 +334,11 @@ export default function TeamsPage() {
             <TeamManager
               key={activeTeam._id}
               team={activeTeam}
+              teams={teams}
               onReorder={handleReorderPlayers}
               onUpdatePlayer={handleUpdatePlayer}
+              onUpdateTeam={handleUpdateTeamDetails}
+              onUploadFlag={handleUploadFlag}
             />
           )}
         </SheetContent>
@@ -344,17 +381,28 @@ function TeamListCard({ team, onManage }: { team: Team; onManage: () => void }) 
 
 function TeamManager({
   team,
+  teams,
   onReorder,
   onUpdatePlayer,
+  onUpdateTeam,
+  onUploadFlag,
 }: {
   team: Team
+  teams: Team[]
   onReorder: (teamId: string, players: TeamPlayer[]) => Promise<void>
   onUpdatePlayer: (
     teamId: string,
     playerId: string,
     updates: Partial<Omit<TeamPlayer, "_id" | "position">>
   ) => Promise<void>
+  onUpdateTeam: (teamId: string, updates: UpdateTeamPayload) => Promise<Team | null>
+  onUploadFlag: (teamId: string, file: File) => Promise<Team | null>
 }) {
+  const alternateCandidates = useMemo(
+    () => teams.filter((candidate) => candidate._id !== team._id && candidate.game === team.game),
+    [teams, team._id, team.game]
+  )
+
   const formatPlayers = (list: (TeamPlayer | PlayerDraft)[]): PlayerDraft[] =>
     list.map((player) => ({
       ...player,
@@ -365,13 +413,31 @@ function TeamManager({
           : String(player.jerseyNumber),
     }))
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [teamName, setTeamName] = useState(team.name)
+  const [alternateTeamId, setAlternateTeamId] = useState<string>(team.alternateTeam?._id ?? "none")
   const [players, setPlayers] = useState<PlayerDraft[]>(() => formatPlayers(team.players))
   const [savingPlayerId, setSavingPlayerId] = useState<string | null>(null)
   const [isReordering, setIsReordering] = useState(false)
+  const [isSavingDetails, setIsSavingDetails] = useState(false)
+  const [isUploadingFlag, setIsUploadingFlag] = useState(false)
+  const [isRemovingFlag, setIsRemovingFlag] = useState(false)
 
   useEffect(() => {
     setPlayers(formatPlayers(team.players))
   }, [team.players])
+
+  useEffect(() => {
+    setTeamName(team.name)
+    setAlternateTeamId(team.alternateTeam?._id ?? "none")
+  }, [team._id, team.name, team.alternateTeam?._id])
+
+  const trimmedTeamName = teamName.trim()
+  const hasNameChanged = trimmedTeamName !== team.name.trim()
+  const hasAlternateChanged =
+    (alternateTeamId === "none" && !!team.alternateTeam) ||
+    (alternateTeamId !== "none" && team.alternateTeam?._id !== alternateTeamId)
+  const hasDetailsChanges = hasNameChanged || hasAlternateChanged
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -380,6 +446,76 @@ function TeamManager({
       },
     })
   )
+
+  const handleSaveDetails = async () => {
+    const payload: UpdateTeamPayload = {}
+
+    if (hasNameChanged) {
+      if (!trimmedTeamName) {
+        toast.error("Team name cannot be empty.")
+        return
+      }
+      payload.name = trimmedTeamName
+    }
+
+    if (hasAlternateChanged) {
+      payload.alternateTeamId = alternateTeamId === "none" ? null : alternateTeamId
+    }
+
+    if (Object.keys(payload).length === 0) {
+      return
+    }
+
+    try {
+      setIsSavingDetails(true)
+      await onUpdateTeam(team._id, payload)
+      toast.success("Team details updated.")
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update team details."
+      toast.error(message)
+    } finally {
+      setIsSavingDetails(false)
+    }
+  }
+
+  const handleFlagInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file for the flag.")
+      event.target.value = ""
+      return
+    }
+
+    try {
+      setIsUploadingFlag(true)
+      await onUploadFlag(team._id, file)
+      toast.success("Team flag updated.")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to upload team flag."
+      toast.error(message)
+    } finally {
+      setIsUploadingFlag(false)
+      event.target.value = ""
+    }
+  }
+
+  const handleRemoveFlag = async () => {
+    try {
+      setIsRemovingFlag(true)
+      await onUpdateTeam(team._id, { flagKey: null })
+      toast.success("Team flag removed.")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to remove team flag."
+      toast.error(message)
+    } finally {
+      setIsRemovingFlag(false)
+    }
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -423,7 +559,7 @@ function TeamManager({
     })
   }
 
-  const handleUpdatePlayer = async (
+  const handleUpdatePlayerDetails = async (
     playerId: string,
     updates: { name: string; jerseyNumber: number | null }
   ) => {
@@ -433,7 +569,7 @@ function TeamManager({
       )
       if (hasDuplicate) {
         toast.error("Jersey number must be unique within the team.")
-        return
+        return false
       }
     }
 
@@ -456,8 +592,11 @@ function TeamManager({
       )
     )
 
+    let wasSuccessful = false
+
     try {
       await onUpdatePlayer(team._id, playerId, updates)
+      wasSuccessful = true
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to update player details."
@@ -466,34 +605,137 @@ function TeamManager({
     } finally {
       setSavingPlayerId(null)
     }
+
+    return wasSuccessful
   }
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col gap-2 border-b px-6 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+      <div className="border-b px-6 py-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             <h2 className="text-xl font-semibold">{team.name}</h2>
             <p className="text-sm text-muted-foreground">
-              Drag to reorder players. Positions update automatically.
+              Update team details, manage alternate assignment, and configure player lineup.
             </p>
           </div>
-          {isReordering && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving order...
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="grid flex-1 gap-4 md:grid-cols-2 md:gap-6">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="team-name-input">Team name</Label>
+                <Input
+                  id="team-name-input"
+                  value={teamName}
+                  onChange={(event) => setTeamName(event.target.value)}
+                  placeholder="Team name"
+                  disabled={isSavingDetails}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Alternate team</Label>
+                <Select
+                  value={alternateTeamId}
+                  onValueChange={(value) => setAlternateTeamId(value)}
+                  disabled={isSavingDetails}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select alternate team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No alternate team</SelectItem>
+                    {alternateCandidates.map((candidate) => (
+                      <SelectItem key={candidate._id} value={candidate._id}>
+                        {candidate.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
+            <Button
+              onClick={handleSaveDetails}
+              disabled={!hasDetailsChanges || isSavingDetails || !trimmedTeamName}
+            >
+              {isSavingDetails ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save details
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-16 w-24 overflow-hidden rounded-md border bg-muted">
+                {team.flagUrl ? (
+                  <img
+                    src={team.flagUrl}
+                    alt={`${team.name} flag`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                    No flag uploaded
+                  </div>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFlagInputChange}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingFlag || isRemovingFlag}
+                >
+                  {isUploadingFlag ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <UploadCloud className="mr-2 h-4 w-4" />
+                  )}
+                  {isUploadingFlag ? "Uploading..." : "Upload flag"}
+                </Button>
+                {team.flagKey && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleRemoveFlag}
+                    disabled={isUploadingFlag || isRemovingFlag}
+                  >
+                    {isRemovingFlag ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+            {isReordering && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving order...
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="rounded-md border bg-muted/40">
-          <div className="grid grid-cols-[auto_48px_1fr_120px_auto] items-center gap-3 border-b px-4 py-3 text-xs font-semibold uppercase text-muted-foreground">
+          <div className="grid grid-cols-[auto_48px_1fr_120px_160px] items-center gap-3 border-b px-4 py-3 text-xs font-semibold uppercase text-muted-foreground">
             <span />
             <span>Pos</span>
             <span>Name</span>
             <span>Jersey #</span>
-            <span />
+            <span className="text-right">Actions</span>
           </div>
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SortableContext
@@ -506,7 +748,7 @@ function TeamManager({
                   player={player}
                   disabled={isReordering || savingPlayerId === player._id}
                   isSaving={savingPlayerId === player._id}
-                  onSave={handleUpdatePlayer}
+                  onSave={handleUpdatePlayerDetails}
                 />
               ))}
             </SortableContext>
@@ -526,7 +768,7 @@ function SortablePlayerRow({
   player: PlayerDraft
   disabled: boolean
   isSaving: boolean
-  onSave: (playerId: string, updates: { name: string; jerseyNumber: number | null }) => void
+  onSave: (playerId: string, updates: { name: string; jerseyNumber: number | null }) => Promise<boolean>
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortableItem(
     player._id
@@ -537,13 +779,16 @@ function SortablePlayerRow({
     transition,
   }
 
+  const [isEditing, setIsEditing] = useState(false)
   const [name, setName] = useState(player.nameDraft)
   const [jersey, setJersey] = useState(player.jerseyDraft)
 
   useEffect(() => {
-    setName(player.nameDraft)
-    setJersey(player.jerseyDraft)
-  }, [player.nameDraft, player.jerseyDraft])
+    if (!isEditing) {
+      setName(player.nameDraft)
+      setJersey(player.jerseyDraft)
+    }
+  }, [player.nameDraft, player.jerseyDraft, isEditing])
 
   const baseName = player.name ?? ""
   const baseJersey =
@@ -552,13 +797,35 @@ function SortablePlayerRow({
       : String(player.jerseyNumber)
 
   const hasChanges = name.trim() !== baseName.trim() || jersey !== baseJersey
+  const isActionDisabled = disabled || isSaving
+
+  const handleSave = async () => {
+    if (!hasChanges || isActionDisabled) {
+      return
+    }
+
+    const success = await onSave(player._id, {
+      name: name.trim(),
+      jerseyNumber: jersey === "" ? null : Number(jersey),
+    })
+
+    if (success) {
+      setIsEditing(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setName(player.nameDraft)
+    setJersey(player.jerseyDraft)
+    setIsEditing(false)
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "grid grid-cols-[auto_48px_1fr_120px_auto] items-center gap-3 border-b px-4 py-3 last:border-b-0",
+        "grid grid-cols-[auto_48px_1fr_120px_160px] items-center gap-3 border-b px-4 py-3 last:border-b-0",
         isDragging ? "bg-background shadow-md" : "bg-background/60"
       )}
     >
@@ -566,45 +833,87 @@ function SortablePlayerRow({
         className="flex h-8 w-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed"
         {...attributes}
         {...listeners}
-        disabled={disabled}
+        disabled={isActionDisabled || isEditing}
         aria-label="Drag player"
       >
         <GripVertical className="h-4 w-4" />
       </button>
       <span className="text-sm font-medium">{player.position}</span>
-      <Input
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        placeholder="Player name"
-        disabled={disabled}
-      />
-      <Input
-        type="number"
-        min={0}
-        max={999}
-        value={jersey}
-        onChange={(event) => {
-          const value = event.target.value
-          if (value === "" || /^\d{0,3}$/.test(value)) {
-            setJersey(value)
-          }
-        }}
-        placeholder="Jersey #"
-        disabled={disabled}
-      />
-      <Button
-        size="sm"
-        onClick={() =>
-          onSave(player._id, {
-            name: name.trim(),
-            jerseyNumber: jersey === "" ? null : Number(jersey),
-          })
-        }
-        disabled={!hasChanges || disabled || isSaving}
-      >
-        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        Save
-      </Button>
+      {isEditing ? (
+        <Input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Player name"
+          disabled={isActionDisabled}
+        />
+      ) : (
+        <span className="text-sm">
+          {player.name && player.name.trim().length > 0 ? (
+            player.name
+          ) : (
+            <span className="text-muted-foreground">Unnamed player</span>
+          )}
+        </span>
+      )}
+      {isEditing ? (
+        <Input
+          type="number"
+          min={0}
+          max={999}
+          value={jersey}
+          onChange={(event) => {
+            const value = event.target.value
+            if (value === "" || /^\d{0,3}$/.test(value)) {
+              setJersey(value)
+            }
+          }}
+          placeholder="Jersey #"
+          disabled={isActionDisabled}
+        />
+      ) : (
+        <span className="text-sm text-muted-foreground">
+          {player.jerseyNumber === null || player.jerseyNumber === undefined
+            ? "—"
+            : player.jerseyNumber}
+        </span>
+      )}
+      <div className="flex items-center justify-end gap-2">
+        {isEditing ? (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancel}
+              disabled={isActionDisabled}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!hasChanges || isActionDisabled}
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+            disabled={isActionDisabled}
+          >
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

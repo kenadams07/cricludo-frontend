@@ -11,11 +11,20 @@ export type TeamPlayer = {
   position: number
 }
 
+export type AlternateTeam = {
+  _id: string
+  name: string
+  game: string
+}
+
 export type Team = {
   _id: string
   name: string
   game: string
   players: TeamPlayer[]
+  alternateTeam: AlternateTeam | null
+  flagKey: string | null
+  flagUrl: string | null
 }
 
 export function useTeams(game: string) {
@@ -60,6 +69,45 @@ export async function reorderTeamPlayers(teamId: string, players: Pick<TeamPlaye
 
   if (response?.statusCode && response.statusCode >= 400) {
     throw new Error(response?.message ?? "Failed to reorder players.")
+  }
+
+  return response as Team
+}
+
+export type UpdateTeamPayload = {
+  name?: string
+  alternateTeamId?: string | null
+  flagKey?: string | null
+}
+
+export async function updateTeamDetails(teamId: string, payload: UpdateTeamPayload) {
+  const body = Object.fromEntries(
+    Object.entries(payload ?? {}).filter(([, value]) => value !== undefined)
+  )
+
+  const response = await fetcher(`${API_URL}/teams/${teamId}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  })
+
+  if (response?.statusCode && response.statusCode >= 400) {
+    throw new Error(response?.message ?? "Failed to update team.")
+  }
+
+  return response as Team
+}
+
+export async function uploadTeamFlag(teamId: string, file: File) {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const response = await fetcher(`${API_URL}/teams/${teamId}/flag`, {
+    method: "POST",
+    body: formData,
+  })
+
+  if (response?.statusCode && response.statusCode >= 400) {
+    throw new Error(response?.message ?? "Failed to upload team flag.")
   }
 
   return response as Team
