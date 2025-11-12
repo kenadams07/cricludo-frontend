@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -363,9 +364,12 @@ function TeamListCard({ team, onManage }: { team: Team; onManage: () => void }) 
             {configuredPlayers} of 11 players configured · Positions locked in order
           </CardDescription>
         </div>
-        <Badge variant="outline" className="uppercase">
-          {gameLabel}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="uppercase">
+            {gameLabel}
+          </Badge>
+          {team.isParentTeam && <Badge variant="secondary">Parent</Badge>}
+        </div>
       </CardHeader>
       <CardContent className="mt-auto flex items-center justify-between gap-3">
         <div className="text-xs text-muted-foreground">
@@ -416,6 +420,7 @@ function TeamManager({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [teamName, setTeamName] = useState(team.name)
   const [alternateTeamId, setAlternateTeamId] = useState<string>(team.alternateTeam?._id ?? "none")
+  const [isParentTeam, setIsParentTeam] = useState<boolean>(Boolean(team.isParentTeam))
   const [players, setPlayers] = useState<PlayerDraft[]>(() => formatPlayers(team.players))
   const [savingPlayerId, setSavingPlayerId] = useState<string | null>(null)
   const [isReordering, setIsReordering] = useState(false)
@@ -430,14 +435,16 @@ function TeamManager({
   useEffect(() => {
     setTeamName(team.name)
     setAlternateTeamId(team.alternateTeam?._id ?? "none")
-  }, [team._id, team.name, team.alternateTeam?._id])
+    setIsParentTeam(Boolean(team.isParentTeam))
+  }, [team._id, team.name, team.alternateTeam?._id, team.isParentTeam])
 
   const trimmedTeamName = teamName.trim()
   const hasNameChanged = trimmedTeamName !== team.name.trim()
   const hasAlternateChanged =
     (alternateTeamId === "none" && !!team.alternateTeam) ||
     (alternateTeamId !== "none" && team.alternateTeam?._id !== alternateTeamId)
-  const hasDetailsChanges = hasNameChanged || hasAlternateChanged
+  const hasParentChanged = isParentTeam !== Boolean(team.isParentTeam)
+  const hasDetailsChanges = hasNameChanged || hasAlternateChanged || hasParentChanged
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -460,6 +467,10 @@ function TeamManager({
 
     if (hasAlternateChanged) {
       payload.alternateTeamId = alternateTeamId === "none" ? null : alternateTeamId
+    }
+
+    if (hasParentChanged) {
+      payload.isParentTeam = isParentTeam
     }
 
     if (Object.keys(payload).length === 0) {
@@ -651,10 +662,27 @@ function TeamManager({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-4 md:col-span-2">
+                <div className="space-y-1">
+                  <Label htmlFor="parent-team-toggle">Parent team</Label>
+                  <p className="text-xs text-muted-foreground"> Mark this team as the **primary parent variant** for its game. </p>
+                    <p className="text-xs text-muted-foreground"> Unselected teams will be considered **alternates**. </p>
+                    <p className="text-xs text-muted-foreground"> Teams that are not selected <span className="text-red-500"> **will not be visible** </span> in the team selection list on mobile view.</p>
+                </div>
+                <Checkbox
+                  id="parent-team-toggle"
+                  checked={isParentTeam}
+                  onCheckedChange={(value) => setIsParentTeam(Boolean(value))}
+                  disabled={isSavingDetails}
+                  className="size-5 rounded-full"
+                />
+              </div>
             </div>
             <Button
               onClick={handleSaveDetails}
-              disabled={!hasDetailsChanges || isSavingDetails || !trimmedTeamName}
+              disabled={
+                !hasDetailsChanges || isSavingDetails || (hasNameChanged && !trimmedTeamName)
+              }
             >
               {isSavingDetails ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

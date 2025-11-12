@@ -25,6 +25,7 @@ export type Team = {
   alternateTeam: AlternateTeam | null
   flagKey: string | null
   flagUrl: string | null
+  isParentTeam: boolean
 }
 
 export function useTeams(game: string) {
@@ -78,6 +79,7 @@ export type UpdateTeamPayload = {
   name?: string
   alternateTeamId?: string | null
   flagKey?: string | null
+  isParentTeam?: boolean
 }
 
 export async function updateTeamDetails(teamId: string, payload: UpdateTeamPayload) {
