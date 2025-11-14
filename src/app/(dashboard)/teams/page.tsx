@@ -55,7 +55,7 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@/components/ui/select"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/shadcn-io/spinner"
 import { cn } from "@/lib/utils"
 
@@ -354,6 +354,9 @@ export default function TeamsPage() {
                side='right'
                className='flex h-full w-full max-w-none flex-col overflow-hidden border-l p-0 sm:max-w-full lg:max-w-5xl'
             >
+               <SheetTitle className='sr-only'>
+                  {activeTeam ? `Manage ${activeTeam.name}` : "Manage Team"}
+               </SheetTitle>
                {activeTeam && (
                   <TeamManager
                      key={activeTeam._id}
