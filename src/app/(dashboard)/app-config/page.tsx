@@ -130,7 +130,6 @@ const columns: ColumnDef<Emoji>[] = [
    },
 ]
 
-// Emoji Card Component
 function EmojiCard({ emoji }: { emoji: Emoji }) {
    const [openDetail, setOpenDetail] = useState(false)
    const { data: imageUrlData } = useGetFileUrl(emoji.emogiPicUrl || "")
@@ -182,9 +181,7 @@ function EmojiCard({ emoji }: { emoji: Emoji }) {
    )
 }
 
-// Emoji Grid Component
 function EmojiGrid({ data }: { data: Emoji[] }) {
-   // Sort by order when data changes from server
    const sortedData = useMemo(() => {
       const validData = data.filter((item) => {
          if (!item || !item.id) return false
@@ -212,7 +209,6 @@ function EmojiGrid({ data }: { data: Emoji[] }) {
    )
 }
 
-// Emoji Detail Dialog Component
 function EmojiDetailDialog({
    emoji,
    open,
@@ -529,13 +525,11 @@ function EditEmojiDialog({ emoji, onClose }: { emoji: Emoji; onClose?: () => voi
          let imageKey = formData.emogiPicUrl
          let animationKey = formData.emogiAnimationUrl
 
-         // Upload image if new file selected
          if (imageFile) {
             const imageRes = await uploadTrigger({ file: imageFile, type: "image" })
             imageKey = imageRes.key
          }
 
-         // Upload animation if new file selected
          if (animationFile) {
             const animationRes = await uploadTrigger({
                file: animationFile,
@@ -729,7 +723,6 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
          return
       }
 
-      // Check if ID already exists
       const existingIds = (data?.data?.emogi || []).map((e: Emoji) => e.id)
       if (existingIds.includes(formData.id)) {
          toast.error(`ID "${formData.id}" already exists. Please use a unique ID.`)
@@ -737,10 +730,8 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
       }
 
       try {
-         // Upload image
          const imageRes = await uploadTrigger({ file: imageFile, type: "image" })
 
-         // Upload animation if provided
          let animationKey = ""
          if (animationFile) {
             const animationRes = await uploadTrigger({
@@ -889,7 +880,6 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
    )
 }
 
-// General Settings Component
 function GeneralSettings({ config, onUpdate }: { config: any; onUpdate: () => void }) {
    const [formData, setFormData] = useState({
       appName: config?.appName || "",
@@ -1029,7 +1019,6 @@ function GeneralSettings({ config, onUpdate }: { config: any; onUpdate: () => vo
    )
 }
 
-// Bonus Settings Component
 function BonusSettings({ config, onUpdate }: { config: any; onUpdate: () => void }) {
    const [formData, setFormData] = useState({
       dailyBonusCons: config?.dailyBonusCons || 0,
@@ -1201,7 +1190,6 @@ function BonusSettings({ config, onUpdate }: { config: any; onUpdate: () => void
    )
 }
 
-// Store Config Component
 function StoreConfig({ config, onUpdate }: { config: any; onUpdate: () => void }) {
    const [formData, setFormData] = useState({
       appleStoreConfig: {

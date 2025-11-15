@@ -58,7 +58,6 @@ export function EditUserAccountDialog({
       PutRequest
    )
 
-   // Convert timeSpent from milliseconds to hours, minutes, seconds
    useEffect(() => {
       if (user?.totalTimeSpent) {
          const totalSeconds = Math.floor(user.totalTimeSpent / 1000)
@@ -71,7 +70,6 @@ export function EditUserAccountDialog({
       }
    }, [user, open])
 
-   // Reset form when dialog opens/closes
    useEffect(() => {
       if (open) {
          setStatus(user?.active ? "active" : "inactive")
@@ -96,7 +94,6 @@ export function EditUserAccountDialog({
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault()
 
-      // Convert time spent back to milliseconds
       const totalSeconds =
          parseInt(timeSpentHours || "0") * 3600 +
          parseInt(timeSpentMinutes || "0") * 60 +
@@ -139,7 +136,6 @@ export function EditUserAccountDialog({
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className='space-y-6 py-4'>
-               {/* Status */}
                <div className='space-y-2'>
                   <Label htmlFor='status'>Status</Label>
                   <Select value={status} onValueChange={setStatus}>
@@ -153,7 +149,6 @@ export function EditUserAccountDialog({
                   </Select>
                </div>
 
-               {/* Rating */}
                <div className='space-y-2'>
                   <Label htmlFor='rating'>Rating (%)</Label>
                   <Input

@@ -24,7 +24,6 @@ export function generateChartData(
 ): ChartDataPoint[] {
   const dataMap = new Map<string, ChartDataPoint>();
 
-  // Users
   for (const user of users) {
     const key = getFormattedDate(user.createdAt, timeframe);
     const entry = dataMap.get(key);
@@ -32,7 +31,6 @@ export function generateChartData(
     else dataMap.set(key, { date: key, userCount: 1, gameRoomCount: 0 });
   }
 
-  // Games
   for (const room of gameRooms) {
     const key = getFormattedDate(room.settledAt, timeframe);
     const entry = dataMap.get(key);
@@ -40,7 +38,6 @@ export function generateChartData(
     else dataMap.set(key, { date: key, userCount: 0, gameRoomCount: 1 });
   }
 
-  // Sorted result
   return [...dataMap.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -65,21 +62,18 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
     if (!game?.settledAt) continue;
 
     const settledDate = new Date(game.settledAt);
-    const dayKey = settledDate.toISOString().slice(0, 10); // yyyy-mm-dd
-    const monthKey = `${settledDate.getFullYear()}-${String(
+    const dayKey = settledDate.toISOString().slice(0, 10);g(
       settledDate.getMonth() + 1
     ).padStart(2, "0")}`;
     const yearKey = String(settledDate.getFullYear());
     const timeKeys = { daily: dayKey, monthly: monthKey, yearly: yearKey };
 
-    // Track creator stats
     const creatorId = game.roomCreatedBy;
     if (creatorId) {
       const creatorStats = stats[creatorId] || (stats[creatorId] = initUserStats());
       creatorStats.roomsCreated++;
     }
 
-    // Cache result map to avoid .find() per player
     const resultMap = Object.create(null);
     for (const r of game.result || []) {
       resultMap[r.userId] = r;
@@ -90,7 +84,6 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
       return u ? u.username : p.userId;
     });
 
-    // Process each player
     for (const player of game.players) {
       const userId = player.userId;
       if (!userId) continue;
@@ -104,7 +97,6 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
       if (didWin) userStats.totalWins++;
       else userStats.totalLosses++;
 
-      // Time-based aggregation
       for (const period of ["daily", "monthly", "yearly"] as const) {
         const key = timeKeys[period];
         const periodStats = userStats[period];
@@ -116,7 +108,6 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
         else current.losses++;
       }
 
-      // Prepare opponents
       const opponents = playerUsernames.filter((id) => id !== (userMap.get(userId)?.username || userId));
 
       userStats.matches.push({

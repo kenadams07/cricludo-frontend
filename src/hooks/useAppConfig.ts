@@ -92,10 +92,12 @@ export function useUploadFile() {
 
          if (!res.ok) {
             const error = await res.json()
+            console.error("[Frontend] Upload failed:", error)
             throw new Error(error.message || "Failed to upload file")
          }
 
-         return res.json()
+         const result = await res.json()
+         return result
       }
    )
 }
@@ -112,10 +114,12 @@ export function useGetFileUrl(key: string) {
          })
 
          if (!res.ok) {
+            console.error("[Frontend] Failed to get file URL")
             throw new Error("Failed to get file URL")
          }
 
-         return res.json()
+         const result = await res.json()
+         return result
       },
       {
          revalidateOnFocus: false,
@@ -152,17 +156,10 @@ export function useUpdateEmojiOrder() {
          url: string,
          { arg }: { arg: { emojiOrders: { id: string; order: number }[] } }
       ) => {
-         // Validate the structure before sending
          if (!arg.emojiOrders || !Array.isArray(arg.emojiOrders)) {
             throw new Error("Invalid emojiOrders array")
          }
 
-         console.log(
-            "useUpdateEmojiOrder - raw input:",
-            JSON.stringify(arg.emojiOrders, null, 2)
-         )
-
-         // Filter out any invalid entries and ensure proper structure
          const validOrders = arg.emojiOrders
             .filter((item, index) => {
                if (!item) {
@@ -183,7 +180,6 @@ export function useUpdateEmojiOrder() {
             .map((item, index) => {
                const id = String(item.id).trim()
                const order = typeof item.order === "number" ? item.order : index
-               console.log(`Creating valid order entry ${index}:`, { id, order })
                return {
                   id: id,
                   order: order,
@@ -208,11 +204,6 @@ export function useUpdateEmojiOrder() {
          }
 
          const payload = { emojiOrders: validOrders }
-         console.log(
-            "useUpdateEmojiOrder - sending payload:",
-            JSON.stringify(payload, null, 2)
-         )
-         console.log("useUpdateEmojiOrder - URL:", url)
 
          const res = await fetch(url, {
             method: "PUT",
@@ -222,8 +213,6 @@ export function useUpdateEmojiOrder() {
             },
             body: JSON.stringify(payload),
          })
-
-         console.log("useUpdateEmojiOrder - response status:", res.status, res.statusText)
 
          if (!res.ok) {
             let errorMessage = "Failed to update emoji order"

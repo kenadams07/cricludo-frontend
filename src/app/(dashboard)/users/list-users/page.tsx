@@ -34,7 +34,6 @@ const schema = z.object({
   isAgent: z.boolean().optional(),
   lastLogin: z.string().optional(),
 });
-// ring-2
 
 const columns: ColumnDef<z.infer<typeof schema>>[] = [
   {

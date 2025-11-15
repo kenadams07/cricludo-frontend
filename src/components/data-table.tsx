@@ -139,7 +139,7 @@ export function DataTable({
       pageIndex: 0,
       pageSize: 10,
    })
-   // settting initial data when it changes
+
    React.useEffect(() => {
       setData(initialData)
       paginationConfig && setPagination(paginationConfig)
@@ -208,7 +208,6 @@ export function DataTable({
             const oldIndex = dataIds.indexOf(active.id)
             const newIndex = dataIds.indexOf(over.id)
             const newData = arrayMove(data, oldIndex, newIndex)
-            // Call onDataChange if provided (for emoji order updates)
             if (onDataChange) {
                onDataChange(newData)
             }
@@ -221,7 +220,6 @@ export function DataTable({
       return col.id.toLowerCase() === "usertype"
    })
 
-   // ✅ Dynamically generate filter options from the data
    const userTypeOptions = React.useMemo(() => {
       if (!userTypeColumn) return []
       const unique = new Set<string>()
@@ -250,7 +248,6 @@ export function DataTable({
                )}
             </div>
 
-            {/* customize and filter */}
             <div className='flex justify-end gap-2 px-4 lg:px-6'>
                <div className='flex items-center gap-2'>
                   <DropdownMenu>
