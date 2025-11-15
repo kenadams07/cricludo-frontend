@@ -62,7 +62,8 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
     if (!game?.settledAt) continue;
 
     const settledDate = new Date(game.settledAt);
-    const dayKey = settledDate.toISOString().slice(0, 10);g(
+    const dayKey = settledDate.toISOString().slice(0, 10);
+    const monthKey = `${settledDate.getFullYear()}-${String(
       settledDate.getMonth() + 1
     ).padStart(2, "0")}`;
     const yearKey = String(settledDate.getFullYear());
@@ -74,6 +75,7 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
       creatorStats.roomsCreated++;
     }
 
+
     const resultMap = Object.create(null);
     for (const r of game.result || []) {
       resultMap[r.userId] = r;
@@ -83,6 +85,7 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
       const u = userMap.get(p.userId);
       return u ? u.username : p.userId;
     });
+
 
     for (const player of game.players) {
       const userId = player.userId;
@@ -108,6 +111,7 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
         else current.losses++;
       }
 
+    
       const opponents = playerUsernames.filter((id) => id !== (userMap.get(userId)?.username || userId));
 
       userStats.matches.push({
