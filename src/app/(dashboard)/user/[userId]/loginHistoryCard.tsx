@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDaysIcon, ClockIcon } from "lucide-react";
@@ -10,10 +10,8 @@ type LoginHistoryCardProps = {
 
 export function LoginHistoryCard({ logins }: LoginHistoryCardProps) {
   const sortedLogins = [...logins].sort(
-    (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    (a, b) => new Date(b).getTime() - new Date(a).getTime(),
   );
-
-  console.log("Sorted Logins:", sortedLogins);
 
   return (
     <Card className="w-full h-full flex flex-col">
@@ -26,12 +24,16 @@ export function LoginHistoryCard({ logins }: LoginHistoryCardProps) {
 
       <CardContent className="overflow-y-auto space-y-4 pr-2">
         {sortedLogins.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No login records found.</p>
+          <p className="text-sm text-muted-foreground">
+            No login records found.
+          </p>
         ) : (
           sortedLogins.map((timestamp, index) => (
             <div key={index} className="flex items-center gap-3 text-sm">
               <ClockIcon className="w-4 h-4 text-muted-foreground" />
-              <span>{index} : {timestamp}</span>
+              <span>
+                {index} : {timestamp}
+              </span>
             </div>
           ))
         )}

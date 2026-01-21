@@ -5,11 +5,7 @@ import { useAnalysisStore } from "@/store/analysisStore";
 import { ColumnDef, Row } from "@tanstack/react-table";
 import React, { useEffect } from "react";
 import z from "zod";
-import {
-  IconCrown,
-  IconShield,
-  IconUser,
-} from "@tabler/icons-react";
+import { IconCrown, IconShield, IconUser } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import UserAvatar from "@/components/user-avatar";
 import { formatPlaytime } from "@/lib/utils";
@@ -52,7 +48,12 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   {
     accessorKey: "email",
     header: "Email",
-    cell: ({ row }) => <div className={`${row?.original?.isGuest ? "text-red-500":""}`}>{row?.original?.email || row?.original?.isGuest && 'Not available for guest'}</div>,
+    cell: ({ row }) => (
+      <div className={`${row?.original?.isGuest ? "text-red-500" : ""}`}>
+        {row?.original?.email ||
+          (row?.original?.isGuest && "Not available for guest")}
+      </div>
+    ),
   },
   {
     accessorKey: "active",
@@ -147,8 +148,14 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     header: "Time Spent (HH:mm:ss)",
     cell: ({ row }) => {
       const TimeSpendInSeconds = Number(row?.original?.totalTimeSpent) ?? 0;
-      const timeSpend = formatPlaytime(TimeSpendInSeconds/1000);
-      return <div className={`${TimeSpendInSeconds > 1000 ? "text-green-500":"text-red-500"}`}>{timeSpend}</div>;
+      const timeSpend = formatPlaytime(TimeSpendInSeconds / 1000);
+      return (
+        <div
+          className={`${TimeSpendInSeconds > 1000 ? "text-green-500" : "text-red-500"}`}
+        >
+          {timeSpend}
+        </div>
+      );
     },
   },
 ];
@@ -169,8 +176,6 @@ export default function ListUsersPage() {
     }
   }, [setTitle, user]);
 
-console.log("chart data:", chartData);
-
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -181,7 +186,7 @@ console.log("chart data:", chartData);
               data={userTableData}
               columns={columns}
               rowClickable={true}
-              isUserListOnly = {pathname === "/list-users"}
+              isUserListOnly={pathname === "/list-users"}
             />
           )}
         </div>

@@ -1,7 +1,18 @@
 import { format } from "date-fns";
-import { ChartDataPoint, Game, StatsByUser, Timeframe, User, UserStats } from "./type";
+import {
+  ChartDataPoint,
+  Game,
+  StatsByUser,
+  Timeframe,
+  User,
+  UserStats,
+} from "./type";
+import { formatPlaytime } from "../utils";
 
-export function getFormattedDate(dateStr: string, timeframe: Timeframe): string {
+export function getFormattedDate(
+  dateStr: string,
+  timeframe: Timeframe,
+): string {
   if (!dateStr) return "";
   const date = new Date(dateStr);
 
@@ -20,7 +31,7 @@ export function getFormattedDate(dateStr: string, timeframe: Timeframe): string 
 export function generateChartData(
   users: User[],
   gameRooms: Game[],
-  timeframe: Timeframe
+  timeframe: Timeframe,
 ): ChartDataPoint[] {
   const dataMap = new Map<string, ChartDataPoint>();
 
@@ -54,29 +65,44 @@ export function initUserStats(): UserStats {
   };
 }
 
-export function generateStats(games: Game[], users: User[]): StatsByUser {
+export function generateStats(
+  games: Game[],
+  users: User[],
+  analysisData: any[],
+): StatsByUser {
   const stats: StatsByUser = Object.create(null);
   const userMap = new Map(users.map((u) => [u._id, u]));
 
+  // ---------------------------
+  // Index analysisData by userId
+  // ---------------------------
+  const analysisMap = new Map<string, any>();
+  for (const u of analysisData || []) {
+    if (!u.userId) continue;
+    analysisMap.set(u.userId, u);
+  }
+
+  // ---------------------------
+  // GAME-BASED STATS
+  // ---------------------------
   for (const game of games) {
     if (!game?.settledAt) continue;
 
     const settledDate = new Date(game.settledAt);
     const dayKey = settledDate.toISOString().slice(0, 10);
     const monthKey = `${settledDate.getFullYear()}-${String(
-      settledDate.getMonth() + 1
+      settledDate.getMonth() + 1,
     ).padStart(2, "0")}`;
     const yearKey = String(settledDate.getFullYear());
-    const timeKeys = { daily: dayKey, monthly: monthKey, yearly: yearKey };
 
-    const creatorId = game.roomCreatedBy;
-    if (creatorId) {
-      const creatorStats = stats[creatorId] || (stats[creatorId] = initUserStats());
+    if (game.roomCreatedBy) {
+      const creatorStats =
+        stats[game.roomCreatedBy] ||
+        (stats[game.roomCreatedBy] = initUserStats());
       creatorStats.roomsCreated++;
     }
 
-
-    const resultMap = Object.create(null);
+    const resultMap: Record<string, any> = Object.create(null);
     for (const r of game.result || []) {
       resultMap[r.userId] = r;
     }
@@ -86,7 +112,6 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
       return u ? u.username : p.userId;
     });
 
-
     for (const player of game.players) {
       const userId = player.userId;
       if (!userId) continue;
@@ -95,24 +120,36 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
 
       userStats.totalGamesPlayed++;
 
-      const result = resultMap[userId];
-      const didWin = result?.rank === 1;
+      const didWin = resultMap[userId]?.rank === 1;
       if (didWin) userStats.totalWins++;
       else userStats.totalLosses++;
 
-      for (const period of ["daily", "monthly", "yearly"] as const) {
-        const key = timeKeys[period];
-        const periodStats = userStats[period];
-        const current =
-          periodStats[key] ||
-          (periodStats[key] = { gamesPlayed: 0, wins: 0, losses: 0 });
-        current.gamesPlayed++;
-        if (didWin) current.wins++;
-        else current.losses++;
+      const buckets = [
+        { key: dayKey, map: userStats.daily },
+        { key: monthKey, map: userStats.monthly },
+        { key: yearKey, map: userStats.yearly },
+      ];
+
+      for (const { key, map } of buckets) {
+        const stat =
+          map[key] ||
+          (map[key] = {
+            gamesPlayed: 0,
+            wins: 0,
+            losses: 0,
+            durationSeconds: 0,
+            durationHour: 0,
+            durationText: "",
+          });
+
+        stat.gamesPlayed++;
+        if (didWin) stat.wins++;
+        else stat.losses++;
       }
 
-    
-      const opponents = playerUsernames.filter((id) => id !== (userMap.get(userId)?.username || userId));
+      const opponents = playerUsernames.filter(
+        (name) => name !== (userMap.get(userId)?.username || userId),
+      );
 
       userStats.matches.push({
         id: game._id,
@@ -123,12 +160,49 @@ export function generateStats(games: Game[], users: User[]): StatsByUser {
         gameType: game.gameType,
         category: game.category,
         winnerPrize: game.players?.[0]?.winnerPrize ?? 0,
-        totalOver: resultMap[
-          Object.keys(resultMap).find((id) => resultMap[id].rank === 1)!
-        ]?.totalOver ?? 0,
+        totalOver:
+          resultMap[
+            Object.keys(resultMap).find((id) => resultMap[id].rank === 1)!
+          ]?.totalOver ?? 0,
         entryValue: player.entryValue,
         coinType: player.coinType,
       });
+    }
+  }
+
+  // ---------------------------
+  // SESSION-BASED DURATION (ONCE PER USER)
+  // ---------------------------
+  for (const [userId, analysisUser] of analysisMap.entries()) {
+    if (!analysisUser?.gameSessions?.length) continue;
+
+    const userStats = stats[userId] || (stats[userId] = initUserStats());
+
+    for (const session of analysisUser.gameSessions) {
+      if (!session.endedAt || !session.duration) continue;
+
+      const endedAt = new Date(session.endedAt);
+      const dayKey = endedAt.toISOString().slice(0, 10);
+      const monthKey = `${endedAt.getFullYear()}-${String(
+        endedAt.getMonth() + 1,
+      ).padStart(2, "0")}`;
+      const yearKey = String(endedAt.getFullYear());
+
+      const buckets = [
+        userStats.daily[dayKey],
+        userStats.monthly[monthKey],
+        userStats.yearly[yearKey],
+      ];
+
+      for (const bucket of buckets) {
+        if (!bucket) continue;
+
+        bucket.durationSeconds += session.duration;
+        bucket.durationHour = +(bucket.durationSeconds / 3600 / 1000).toFixed(
+          2,
+        );
+        bucket.durationText = formatPlaytime(bucket.durationSeconds / 1000);
+      }
     }
   }
 
@@ -144,10 +218,21 @@ export function mergeGameData(gameResults: any[], gameSessions: any[]): any[] {
     sessionMap[s.gameId] = s;
   }
 
-  return gameResults.map((result) => ({
-    ...result,
-    ...(sessionMap[result.roomId] || {}),
-  }));
+  type GameResultWithSession = {
+    endedAt?: string;
+    [key: string]: unknown;
+  };
+
+  return gameResults
+    .map((result) => ({
+      ...result,
+      ...(sessionMap[result.roomId] || {}),
+    }))
+    .sort((a: GameResultWithSession, b: GameResultWithSession) => {
+      const aTime = a.endedAt ? new Date(a.endedAt).getTime() : 0;
+      const bTime = b.endedAt ? new Date(b.endedAt).getTime() : 0;
+      return bTime - aTime;
+    });
 }
 
 export function countGamesSettledToday(games: Game[]): number {

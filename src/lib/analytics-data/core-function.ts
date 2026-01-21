@@ -29,12 +29,8 @@ export function prepareDashboardData(data: {
     };
   }
 
-  const walletMap = new Map(
-    userwallets.map((w) => [w.userId, w])
-  );
-  const analysisMap = new Map(
-    analysisData.map((a) => [a.userId, a])
-  );
+  const walletMap = new Map(userwallets.map((w) => [w.userId, w]));
+  const analysisMap = new Map(analysisData.map((a) => [a.userId, a]));
 
   let totalCoin = 0,
     totalDiamond = 0,
@@ -64,7 +60,7 @@ export function prepareDashboardData(data: {
   const totalRoomsCreated = settledgames?.length || 0;
   const todayRoomSettled = countGamesSettledToday(settledgames);
 
-  const usersChartData = generateStats(settledgames, users);
+  const usersChartData = generateStats(settledgames, users, analysisData);
   const chartData = {
     daily: generateChartData(users, settledgames, "daily"),
     monthly: generateChartData(users, settledgames, "monthly"),
@@ -78,24 +74,18 @@ export function prepareDashboardData(data: {
 
     const mergedMatches = mergeGameData(
       chart.matches || [],
-      analysis.gameSessions || []
+      analysis.gameSessions || [],
     );
 
     return {
       profilePic:
-        user.profile_pic ||
-        analysis.profilePic ||
-        user.google_pic ||
-        "",
+        user.profile_pic || analysis.profilePic || user.google_pic || "",
       username: user.username,
       email: user.email,
       active: user.status === "1" || user.isActive === true,
       totalRoomsCreated: chart.roomsCreated || 0,
       totalGamesJoined:
-        chart.totalGamesPlayed ||
-        user.gamesJoined ||
-        analysis.gamesJoined ||
-        0,
+        chart.totalGamesPlayed || user.gamesJoined || analysis.gamesJoined || 0,
       wins: chart.totalWins || user.wins || analysis.wins || 0,
       losses: chart.totalLosses || user.losses || analysis.losses || 0,
       coinsDistributed: analysis.coinsDistributed || 0,
@@ -110,7 +100,7 @@ export function prepareDashboardData(data: {
       isVIP: !!user.vip_user,
       isGuest: !!user.is_guest,
       isAgent: !!user.is_agent,
-      userType: user?.is_agent? "Agent" : user?.is_guest? "Guest" : "",
+      userType: user?.is_agent ? "Agent" : user?.is_guest ? "Guest" : "",
       followerCount: user.followersCount || 0,
       followingCount: user.followingCount || 0,
       rating: user.rating || 0,

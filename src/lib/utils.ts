@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function capitalize(word: string) {
@@ -13,10 +13,10 @@ export function capitalize(word: string) {
 export const userTypeCollection = {
   "1": "admin",
   "3": "master",
-  "5": "agent"
+  "5": "agent",
 } as const;
 
-export function formatPlaytime(seconds:number): string {
+export function formatPlaytime(seconds: number): string {
   if (seconds < 60) {
     return `${seconds.toFixed(0)} seconds`;
   } else if (seconds < 3600) {
@@ -32,4 +32,54 @@ export function formatPlaytime(seconds:number): string {
       ? `${hours} hour${hours > 1 ? "s" : ""} ${minutes} minute${minutes > 1 ? "s" : ""}`
       : `${hours} hour${hours > 1 ? "s" : ""}`;
   }
+}
+
+type StatItem = {
+  date: string;
+  [key: string]: any;
+};
+
+type StatArrayMap = {
+  [key: string]: StatItem[];
+};
+
+type GenericStats = {
+  [key: string]: any;
+};
+
+type GenericStatItem = {
+  date: string;
+  [key: string]: any;
+};
+
+type GenericStatsArrayByPeriod = {
+  daily: GenericStatItem[];
+  monthly: GenericStatItem[];
+  yearly: GenericStatItem[];
+};
+
+type GenericStatsByPeriod = {
+  daily: Record<string, GenericStats>;
+  monthly: Record<string, GenericStats>;
+  yearly: Record<string, GenericStats>;
+};
+
+export function normalizeStats(
+  data: GenericStatsArrayByPeriod,
+): GenericStatsByPeriod {
+  return {
+    daily: mapPeriod(data.daily),
+    monthly: mapPeriod(data.monthly),
+    yearly: mapPeriod(data.yearly),
+  };
+}
+
+function mapPeriod(items: GenericStatItem[]): Record<string, GenericStats> {
+  const result: Record<string, GenericStats> = {};
+
+  for (const { date, ...rest } of items) {
+    result[date] = rest;
+  }
+
+  return result;
 }
