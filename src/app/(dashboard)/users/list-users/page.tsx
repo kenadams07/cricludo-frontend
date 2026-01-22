@@ -24,6 +24,7 @@ const schema = z.object({
   losses: z.string().optional(),
   rating: z.string().optional(),
   coinsDistributed: z.string().optional(),
+  todayTimeSpent: z.string().optional(),
   totalTimeSpent: z.string().optional(),
   isVIP: z.boolean().optional(),
   isGuest: z.boolean().optional(),
@@ -141,6 +142,18 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     cell: ({ row }) => {
       const gameJoined = row.original.totalRoomsCreated;
       return <div>{gameJoined}</div>;
+    },
+  },
+  {
+    accessorKey: "todayTimeSpent",
+    header: "Today Time Spent",
+    cell: ({ row }) => {
+      const todayTime = String(row?.original?.todayTimeSpent) ?? 0;
+      return (
+        <div className={`${todayTime ? "text-green-500" : "text-red-500"}`}>
+          {todayTime ?? "Not Joined"}
+        </div>
+      );
     },
   },
   {

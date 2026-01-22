@@ -71,6 +71,10 @@ export function prepareDashboardData(data: {
     const analysis = analysisMap.get(user._id) || {};
     const wallet = walletMap.get(user._id) || {};
     const chart = usersChartData[user._id] || {};
+    const formattedDate = new Date().toISOString().split("T")[0];
+
+    const todayTotalTimeSpent =
+      chart?.daily?.[formattedDate]?.durationText || "";
 
     const mergedMatches = mergeGameData(
       chart.matches || [],
@@ -93,6 +97,7 @@ export function prepareDashboardData(data: {
       diamond: wallet.diamond || 0,
       live: wallet.lives || 0,
       totalTimeSpent: analysis.totalTimeSpent || 0,
+      todayTimeSpent: todayTotalTimeSpent,
       loginHistory: analysis.loginHistory || [],
       gameSessions: analysis.gameSessions || [],
       activityStats: analysis.activityStats || [],

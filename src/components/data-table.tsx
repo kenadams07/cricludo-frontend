@@ -238,8 +238,9 @@ export function DataTable({
       defaultValue="outline"
       className="w-full flex-col justify-start gap-4"
     >
-      <div className="flex justify-between px-4 lg:px-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 px-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+        {/* Left actions */}
+        <div className="flex flex-wrap items-center gap-2">
           {reFetchData && userType && (
             <>
               {userType === "admin" && (
@@ -252,77 +253,76 @@ export function DataTable({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-4 lg:px-6">
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <IconLayoutColumns />
-                  <span className="hidden lg:inline text-black">
-                    Customize Columns
-                  </span>
-                  <span className="lg:hidden">Columns</span>
-                  <IconChevronDown />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                {table
-                  .getAllColumns()
-                  .filter(
-                    (column) =>
-                      typeof column.accessorFn !== "undefined" &&
-                      column.getCanHide(),
-                  )
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
-                      >
-                        {column.id}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search all columns..."
-              value={globalFilter ?? ""}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="h-8 w-64"
-            />
-          </div>
+        {/* Right controls */}
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+          {/* Columns dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full lg:w-auto">
+                <IconLayoutColumns />
+                <span className="hidden lg:inline text-black">
+                  Customize Columns
+                </span>
+                <span className="lg:hidden">Columns</span>
+                <IconChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {table
+                .getAllColumns()
+                .filter(
+                  (column) =>
+                    typeof column.accessorFn !== "undefined" &&
+                    column.getCanHide(),
+                )
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Search */}
+          <Input
+            placeholder="Search..."
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="h-8 w-full sm:w-60 lg:w-64"
+          />
+
+          {/* User type filter */}
           {userTypeColumn && userTypeOptions.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Select
-                onValueChange={(value) =>
-                  userTypeColumn.setFilterValue(
-                    value === "all" ? undefined : value,
-                  )
-                }
-              >
-                <SelectTrigger className="h-8 w-40">
-                  <SelectValue placeholder="User Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {userTypeOptions.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              onValueChange={(value) =>
+                userTypeColumn.setFilterValue(
+                  value === "all" ? undefined : value,
+                )
+              }
+            >
+              <SelectTrigger className="h-8 w-full sm:w-40">
+                <SelectValue placeholder="User Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {userTypeOptions.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
       </div>
+
       <TabsContent
         value="outline"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
