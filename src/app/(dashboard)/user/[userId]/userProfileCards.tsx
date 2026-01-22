@@ -29,6 +29,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { capitalize, formatPlaytime } from "@/lib/utils";
 import { EditUserAccountDialog } from "@/components/edit-user-account-dialog";
+import { useAuthStore } from "@/store/authStore";
 
 interface UserProfileProps {
   user: {
@@ -60,6 +61,7 @@ interface UserProfileProps {
 
 export function UserProfileCard({ user, onUpdate }: UserProfileProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const getUserType = useAuthStore((s) => s.getUserType);
 
   const winRate =
     user?.totalGamesJoined > 0 && typeof user?.wins === "number"
@@ -195,15 +197,17 @@ export function UserProfileCard({ user, onUpdate }: UserProfileProps) {
       <Card className="shadow-md transition hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-xl font-semibold">Account Infos</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditDialogOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <IconEdit size={16} />
-            Edit
-          </Button>
+          {getUserType() !== "agent" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <IconEdit size={16} />
+              Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           {/* Active Status or Last Login */}
