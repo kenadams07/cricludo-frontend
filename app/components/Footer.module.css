@@ -1,0 +1,16 @@
+.footerBg {
+    background-image: url('../assets/images/FooterBg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: #1423A3;
+    width: 100%;
+}
+
+.socialIcon {
+    transition: transform 0.2s ease-in-out;
+}
+
+.socialIcon:hover {
+    transform: scale(1.1);
+}

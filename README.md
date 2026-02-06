@@ -1,175 +1,36 @@
-# CricLudo - Responsive Web Application
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-A responsive React web application for CricLudo, featuring mobile-first design and comprehensive responsive components.
+## Getting Started
 
-## 🚀 Features
-
--  **Fully Responsive Design**: Mobile-first approach with breakpoints for all screen sizes
--  **Modern React Components**: Built with React 18 and React Router
--  **Responsive Navigation**: Mobile hamburger menu with smooth animations
--  **Error Handling**: Comprehensive error boundaries and 404 pages
--  **SEO Optimized**: Meta tags and semantic HTML structure
--  **Performance Optimized**: Vite build system with code splitting
-
-## 📱 Responsive Breakpoints
-
--  **Mobile**: 320px - 480px
--  **Tablet**: 481px - 768px
--  **Desktop**: 769px - 1024px
--  **Large Desktop**: 1025px - 1440px
--  **Ultra-wide**: 1441px+
-
-## 🛠️ Installation
-
-1. **Install Dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-2. **Start Development Server**:
-
-   ```bash
-   npm run dev
-   ```
-
-3. **Build for Production**:
-
-   ```bash
-   npm run build
-   ```
-
-4. **Preview Production Build**:
-   ```bash
-   npm run preview
-   ```
-
-## 📁 Project Structure
-
-```
-src/
-├── Components/
-│   └── Navigation.jsx          # Responsive navigation component
-├── Pages/
-│   ├── Home.jsx              # Landing page with features
-│   ├── PrivacyPolicy.jsx     # Privacy policy page
-│   ├── TermsAndConditions.jsx # Terms and conditions page
-│   ├── Error.jsx             # Error page
-│   └── NotFound.jsx          # 404 page
-├── utils/
-│   └── ErrorBoundary.jsx     # Error boundary component
-├── App.jsx                   # Main app component
-├── App.css                   # App-specific styles
-├── index.css                 # Global responsive styles
-└── main.jsx                  # Entry point
-```
-
-## 🎨 Responsive Features
-
-### Navigation
-
--  **Desktop**: Horizontal navigation bar
--  **Mobile**: Hamburger menu with slide-down animation
--  **Touch-friendly**: Large tap targets for mobile devices
-
-### Layout System
-
--  **Grid System**: Flexible CSS Grid and Flexbox
--  **Container**: Responsive containers with max-width
--  **Spacing**: Consistent spacing system across all breakpoints
-
-### Typography
-
--  **Scalable**: Font sizes adjust based on screen size
--  **Readable**: Optimized line heights and spacing
--  **Accessible**: High contrast ratios and readable fonts
-
-### Components
-
--  **Cards**: Responsive cards with hover effects
--  **Buttons**: Touch-friendly buttons with proper sizing
--  **Forms**: Mobile-optimized form elements
--  **Images**: Responsive images with proper aspect ratios
-
-## 📱 Mobile Optimizations
-
--  **Touch Targets**: Minimum 44px touch targets
--  **Viewport**: Proper viewport meta tag
--  **Performance**: Optimized for mobile performance
--  **Accessibility**: ARIA labels and keyboard navigation
-
-## 🎯 Browser Support
-
--  **Modern Browsers**: Chrome, Firefox, Safari, Edge
--  **Mobile Browsers**: iOS Safari, Chrome Mobile, Samsung Internet
--  **Progressive Enhancement**: Graceful degradation for older browsers
-
-## 🔧 Customization
-
-### Colors
-
-The app uses a consistent color palette defined in CSS custom properties:
-
--  Primary: `#667eea` to `#764ba2` (gradient)
--  Secondary: `#6c757d`
--  Success: `#28a745`
--  Error: `#dc3545`
--  Background: `#f8f9fa`
-
-### Breakpoints
-
-Customize breakpoints in `src/index.css`:
-
-```css
-@media (max-width: 768px) {
-   /* Mobile */
-}
-@media (min-width: 769px) and (max-width: 1024px) {
-   /* Tablet */
-}
-@media (min-width: 1025px) {
-   /* Desktop */
-}
-```
-
-## 📊 Performance
-
--  **Bundle Size**: Optimized with Vite
--  **Code Splitting**: Automatic route-based splitting
--  **Lazy Loading**: Components loaded on demand
--  **Caching**: Proper cache headers for static assets
-
-## 🚀 Deployment
-
-### Vercel
+First, run the development server:
 
 ```bash
-npm run build
-# Deploy dist/ folder to Vercel
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-### Netlify
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-npm run build
-# Deploy dist/ folder to Netlify
-```
+You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
-### GitHub Pages
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-```bash
-npm run build
-# Deploy dist/ folder to GitHub Pages
-```
+## Learn More
 
-## 📝 License
+To learn more about Next.js, take a look at the following resources:
 
-This project is developed by 9X Technology LLC for CricLudo.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## 📞 Support
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-For support, contact:
+## Deploy on Vercel
 
--  **Email**: info@9xtechnology.com
--  **Phone**: +971 52 228 0076
--  **Address**: 108, 2020 Building, Al Quoz 3 Sheikh Zayed Road, Dubai, UAE
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
