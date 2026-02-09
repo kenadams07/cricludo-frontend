@@ -53,7 +53,8 @@ const schema = z.object({
   price: z.number(),
   coinType: z.enum(["coin", "diamond"]),
   emogiPicUrl: z.string().optional(),
-  emogiAnimationUrl: z.string().optional(),
+  // emogiAnimationUrl: z.string().optional(),
+  emogiSpritPicUrl: z.string().optional(),
   order: z.number().optional(),
   createdAt: z.string(),
 });
@@ -102,18 +103,27 @@ const columns: ColumnDef<Emoji>[] = [
     },
   },
   {
-    accessorKey: "emogiAnimationUrl",
-    header: "Animation",
+    accessorKey: "emogiSpritPicUrl",
+    header: "Sprit Image",
     cell: ({ row }) => {
-      const key = row.original.emogiAnimationUrl;
-      if (!key) return <span className="text-gray-400">No animation</span>;
-      return (
-        <span className="text-sm text-blue-600 dark:text-blue-400">
-          {key.split("/").pop()}
-        </span>
-      );
+      const key = row.original.emogiSpritPicUrl;
+      if (!key) return <span className="text-gray-400">No sprit image</span>;
+      return <ImagePreview key={key} s3Key={key} />;
     },
   },
+  // {
+  //   accessorKey: "emogiAnimationUrl",
+  //   header: "Animation",
+  //   cell: ({ row }) => {
+  //     const key = row.original.emogiAnimationUrl;
+  //     if (!key) return <span className="text-gray-400">No animation</span>;
+  //     return (
+  //       <span className="text-sm text-blue-600 dark:text-blue-400">
+  //         {key.split("/").pop()}
+  //       </span>
+  //     );
+  //   },
+  // },
   {
     accessorKey: "createdAt",
     header: "Created At",
@@ -134,6 +144,7 @@ const columns: ColumnDef<Emoji>[] = [
 
 function EmojiCard({ emoji }: { emoji: Emoji }) {
   const [openDetail, setOpenDetail] = useState(false);
+  console.log("emoji======>", emoji);
   const { data: imageUrlData } = useGetFileUrl(emoji.emogiPicUrl || "");
 
   return (
@@ -220,8 +231,12 @@ function EmojiDetailDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { data: imageUrlData } = useGetFileUrl(emoji.emogiPicUrl || "");
-  const { data: animationUrlData } = useGetFileUrl(
-    emoji.emogiAnimationUrl || "",
+  // const { data: animationUrlData } = useGetFileUrl(
+  //   emoji.emogiAnimationUrl || "",
+  // );
+  console.log("emoji.emogiSpritPicUrl", emoji.emogiSpritPicUrl);
+  const { data: spritImageUrlData } = useGetFileUrl(
+    emoji.emogiSpritPicUrl || "",
   );
   const { trigger: deleteTrigger, isMutating: isDeleting } = useDeleteEmoji(
     emoji.id,
@@ -310,8 +325,26 @@ function EmojiDetailDialog({
                 )}
               </div>
             </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Sprit Image
+              </Label>
+              <div className="mt-2">
+                {spritImageUrlData?.url ? (
+                  <img
+                    src={spritImageUrlData.url}
+                    alt={emoji.id}
+                    className="w-full max-w-xs h-auto rounded-lg border"
+                  />
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    No Sprit image available
+                  </div>
+                )}
+              </div>
+            </div>
 
-            <div className="md:pl-2">
+            {/* <div className="md:pl-2">
               <Label className="text-sm font-medium text-muted-foreground">
                 Animation
               </Label>
@@ -334,7 +367,7 @@ function EmojiDetailDialog({
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="flex gap-2 justify-end pt-4 border-t">
@@ -528,10 +561,15 @@ function EditEmojiDialog({
     price: emoji.price,
     coinType: emoji.coinType,
     emogiPicUrl: emoji.emogiPicUrl || "",
-    emogiAnimationUrl: emoji.emogiAnimationUrl || "",
+    // emogiAnimationUrl: emoji.emogiAnimationUrl || "",
+    emogiSpritPicUrl: emoji.emogiSpritPicUrl || "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [animationFile, setAnimationFile] = useState<File | null>(null);
+  // const [animationFile, setAnimationFile] = useState<File | null>(null);
+  const [spritImageFile, setSpritImageFile] = useState<File | null>(null);
+  const [spritImagePreview, setSpritImagePreview] = useState<string | null>(
+    null,
+  );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const { trigger: updateTrigger, isMutating: isUpdating } = useUpdateEmoji(
@@ -540,11 +578,12 @@ function EditEmojiDialog({
   const { trigger: uploadTrigger } = useUploadFile();
   const { mutate } = useAppConfig();
   const { data: imageUrlData } = useGetFileUrl(formData.emogiPicUrl || "");
-  const { data: animationUrlData } = useGetFileUrl(
-    !animationFile && formData.emogiAnimationUrl
-      ? formData.emogiAnimationUrl
-      : "",
+  const { data: spritImageUrlData } = useGetFileUrl(
+    formData.emogiSpritPicUrl || "",
   );
+  /* const { data: animationUrlData } = useGetFileUrl( !animationFile && formData.emogiAnimationUrl ? formData.emogiAnimationUrl
+       : "",
+   ); */
 
   useEffect(() => {
     if (imageFile) {
@@ -556,15 +595,25 @@ function EditEmojiDialog({
     } else {
       setImagePreview(null);
     }
-  }, [imageFile]);
+    if (spritImageFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSpritImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(spritImageFile);
+    } else {
+      setSpritImagePreview(null);
+    }
+  }, [imageFile, spritImageFile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       let imageKey = formData.emogiPicUrl;
-      let animationKey = formData.emogiAnimationUrl;
+      // let animationKey = formData.emogiAnimationUrl;
 
+      let spritImageKey = formData.emogiSpritPicUrl;
       if (imageFile) {
         const imageRes = await uploadTrigger({
           file: imageFile,
@@ -573,26 +622,36 @@ function EditEmojiDialog({
         imageKey = imageRes.key;
       }
 
-      if (animationFile) {
-        const animationRes = await uploadTrigger({
-          file: animationFile,
-          type: "animation",
+      // if (animationFile) {
+      //   const animationRes = await uploadTrigger({
+      //     file: animationFile,
+      //     type: "animation",
+      //   });
+      //   animationKey = animationRes.key;
+      // }
+      if (spritImageFile) {
+        const spritImageRes = await uploadTrigger({
+          file: spritImageFile,
+          type: "image",
         });
-        animationKey = animationRes.key;
+        spritImageKey = spritImageRes.key;
       }
 
       await updateTrigger({
         price: formData.price,
         coinType: formData.coinType,
         emogiPicUrl: imageKey,
-        emogiAnimationUrl: animationKey,
+        // emogiAnimationUrl: animationKey,
+        emogiSpritPicUrl: spritImageKey,
       });
 
       toast.success("Emoji updated successfully");
       setOpen(false);
       setImageFile(null);
-      setAnimationFile(null);
+      // setAnimationFile(null);
       setImagePreview(null);
+      setSpritImageFile(null);
+      setSpritImagePreview(null);
       mutate();
       if (onClose) {
         onClose();
@@ -651,7 +710,7 @@ function EditEmojiDialog({
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="image">Image</Label>
+            <Label htmlFor="image">IImage</Label>
             {imagePreview ? (
               <div className="space-y-2">
                 <img
@@ -688,8 +747,47 @@ function EditEmojiDialog({
               onChange={(e) => setImageFile(e.target.files?.[0] || null)}
             />
           </div>
-
           <div className="space-y-3">
+            <Label htmlFor="image">Sprit Image</Label>
+            {spritImagePreview ? (
+              <div className="space-y-2">
+                <img
+                  src={spritImagePreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg border"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // setImageFile(null);
+                    setSpritImageFile(null);
+                    setSpritImagePreview(null);
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : spritImageUrlData?.url ? (
+              <div className="space-y-2">
+                <img
+                  src={spritImageUrlData.url}
+                  alt="Current"
+                  className="w-32 h-32 object-cover rounded-lg border"
+                />
+                <p className="text-xs text-gray-500">Current Sprit image</p>
+              </div>
+            ) : null}
+            <Input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setSpritImageFile(e.target.files?.[0] || null)}
+            />
+          </div>
+
+          {/* <div className="space-y-3">
             <Label htmlFor="animation">Animation (JSON)</Label>
             <Input
               id="animation"
@@ -710,7 +808,7 @@ function EditEmojiDialog({
                 </p>
               )}
             </div>
-          </div>
+          </div> */}
 
           <div className="flex gap-2 justify-end pt-4">
             <Button
@@ -738,8 +836,12 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
     coinType: "coin" as "coin" | "diamond",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [animationFile, setAnimationFile] = useState<File | null>(null);
+  // const [animationFile, setAnimationFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [spritImageFile, setSpritImageFile] = useState<File | null>(null);
+  const [spritImagePreview, setSpritImagePreview] = useState<string | null>(
+    null,
+  );
 
   const { trigger: addTrigger, isMutating: isAdding } = useAddEmoji();
   const { trigger: uploadTrigger } = useUploadFile();
@@ -755,7 +857,16 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
     } else {
       setImagePreview(null);
     }
-  }, [imageFile]);
+    if (spritImageFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSpritImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(spritImageFile);
+    } else {
+      setSpritImagePreview(null);
+    }
+  }, [imageFile, spritImageFile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -770,6 +881,11 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
       return;
     }
 
+    if (!spritImageFile) {
+      toast.error("Please select a sprit image file");
+      return;
+    }
+
     const existingIds = (data?.data?.emogi || []).map((e: Emoji) => e.id);
     if (existingIds.includes(formData.id)) {
       toast.error(
@@ -780,30 +896,37 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
 
     try {
       const imageRes = await uploadTrigger({ file: imageFile, type: "image" });
+      const spritImageRes = await uploadTrigger({
+        file: spritImageFile,
+        type: "image",
+      });
 
-      let animationKey = "";
-      if (animationFile) {
-        const animationRes = await uploadTrigger({
-          file: animationFile,
-          type: "animation",
-        });
-        animationKey = animationRes.key;
-      }
+      // let animationKey = "";
+      // if (animationFile) {
+      //   const animationRes = await uploadTrigger({
+      //     file: animationFile,
+      //     type: "animation",
+      //   });
+      //   animationKey = animationRes.key;
+      // }
 
       await addTrigger({
         id: formData.id.trim(),
         price: formData.price,
         coinType: formData.coinType,
         emogiPicUrl: imageRes.key,
-        emogiAnimationUrl: animationKey,
+        // emogiAnimationUrl: animationKey,
+        emogiSpritPicUrl: spritImageRes.key,
       });
 
       toast.success("Emoji added successfully");
       setOpen(false);
       setFormData({ id: "", price: 1000, coinType: "coin" });
       setImageFile(null);
-      setAnimationFile(null);
+      // setAnimationFile(null);
+      setSpritImageFile(null);
       setImagePreview(null);
+      setSpritImagePreview(null);
       mutate();
       onEmojiAdded();
     } catch (error: any) {
@@ -878,7 +1001,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="new-image">Image *</Label>
+            <Label htmlFor="new-image">Icon Image *</Label>
             {imagePreview ? (
               <div>
                 <img
@@ -901,8 +1024,32 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
               disabled={isAdding}
             />
           </div>
+          <div className="space-y-3">
+            <Label htmlFor="new-image">Sprit Image *</Label>
+            {spritImagePreview ? (
+              <div>
+                <img
+                  src={spritImagePreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg border"
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Upload an image to preview it here.
+              </p>
+            )}
+            <Input
+              id="new-image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setSpritImageFile(e.target.files?.[0] || null)}
+              required
+              disabled={isAdding}
+            />
+          </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="new-animation">Animation (JSON)</Label>
             <Input
               id="new-animation"
@@ -916,7 +1063,7 @@ function AddEmojiDialog({ onEmojiAdded }: { onEmojiAdded: () => void }) {
               height={150}
               className="w-full max-w-[200px]"
             />
-          </div>
+          </div> */}
 
           <div className="flex gap-2 justify-end pt-4">
             <Button
