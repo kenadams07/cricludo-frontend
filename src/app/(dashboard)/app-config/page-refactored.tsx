@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -16,11 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  useAppConfig,
-  useUpdateAppConfig,
-  useGetAllGifts,
-} from "@/hooks/useAppConfig";
+import { useAppConfig, useUpdateAppConfig } from "@/hooks/useAppConfig";
 import { toast } from "sonner";
 import { GiftGrid } from "@/components/gift-grid";
 import { AddGiftDialog } from "@/components/add-gift-dialog";
@@ -474,15 +477,9 @@ export default function AppConfigPage() {
   const getUserType = useAuthStore((s) => s.getUserType);
   const setTitle = useAuthStore((t) => t.setTitle);
   const { data, isLoading, mutate } = useAppConfig();
-  const {
-    data: giftsData,
-    isLoading: giftsLoading,
-    mutate: mutateGifts,
-  } = useGetAllGifts();
 
   const userType = getUserType();
   const config = data?.data || {};
-  const gifts = giftsData?.data || [];
 
   useEffect(() => {
     setTitle("App Configuration");
@@ -535,16 +532,10 @@ export default function AppConfigPage() {
                   Manage gift configurations. Click to view details.
                 </CardDescription>
               </div>
-              <AddGiftDialog onGiftAdded={() => mutateGifts()} />
+              <AddGiftDialog onGiftAdded={() => mutate()} />
             </CardHeader>
             <CardContent>
-              {giftsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-muted-foreground">Loading gifts...</div>
-                </div>
-              ) : (
-                <GiftGrid data={gifts} />
-              )}
+              <GiftGrid data={config?.emogi || []} />
             </CardContent>
           </Card>
         </TabsContent>
