@@ -53,7 +53,6 @@ export function AddGiftDialog({ onGiftAdded }: AddGiftDialogProps) {
 
   const { trigger: addTrigger, isMutating: isAdding } = useAddEmoji();
   const { trigger: uploadTrigger } = useUploadFile();
-  const { mutate, data } = useAppConfig();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,15 +70,6 @@ export function AddGiftDialog({ onGiftAdded }: AddGiftDialogProps) {
 
     if (!spritImageFile) {
       toast.error("Please select a sprite image file");
-      return;
-    }
-
-    // Check for existing IDs
-    const existingIds = (data?.data?.emogi || []).map((e: Gift) => e.id);
-    if (giftIdExists(formData.id, existingIds)) {
-      toast.error(
-        `ID "${formData.id}" already exists. Please use a unique ID.`,
-      );
       return;
     }
 
@@ -107,7 +97,6 @@ export function AddGiftDialog({ onGiftAdded }: AddGiftDialogProps) {
       setFormData({ id: "", price: 1000, coinType: "coin" });
       clearAll();
 
-      mutate();
       onGiftAdded?.();
     } catch (error: any) {
       toast.error(error.message || "Failed to add gift");
