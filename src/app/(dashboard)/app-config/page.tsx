@@ -19,12 +19,9 @@ import {
 import {
   useAppConfig,
   useUpdateAppConfig,
-  useGetAllGifts,
-} from "@/hooks/useAppConfig";
+ } from "@/hooks/useAppConfig";
 import { toast } from "sonner";
-import { GiftGrid } from "@/components/gift-grid";
-import { AddGiftDialog } from "@/components/add-gift-dialog";
-
+ 
 /**
  * General Settings Component
  * Manages basic app configuration
@@ -474,16 +471,11 @@ export default function AppConfigPage() {
   const getUserType = useAuthStore((s) => s.getUserType);
   const setTitle = useAuthStore((t) => t.setTitle);
   const { data, isLoading, mutate } = useAppConfig();
-  const {
-    data: giftsData,
-    isLoading: giftsLoading,
-    mutate: mutateGifts,
-  } = useGetAllGifts();
+ 
 
   const userType = getUserType();
   const config = data?.data || {};
-  const gifts = giftsData?.data || [];
-
+ 
   useEffect(() => {
     setTitle("App Configuration");
     if (userType && !["admin"].includes(userType)) {
@@ -507,11 +499,10 @@ export default function AppConfigPage() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-secondary/90 rounded-md">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="bonus">Bonus Settings</TabsTrigger>
-          <TabsTrigger value="store">Store Config</TabsTrigger>
-          <TabsTrigger value="gifts">Gifts</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 bg-secondary/90 rounded-md ">
+          <TabsTrigger className="cursor" value="general">General</TabsTrigger>
+          <TabsTrigger className="cursor" value="bonus">Bonus Settings</TabsTrigger>
+          <TabsTrigger className="cursor" value="store">Store Config</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4 mt-6">
@@ -524,29 +515,6 @@ export default function AppConfigPage() {
 
         <TabsContent value="store" className="space-y-4 mt-6">
           <StoreConfig config={config} onUpdate={() => mutate()} />
-        </TabsContent>
-
-        <TabsContent value="gifts" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Gift Management</CardTitle>
-                <CardDescription>
-                  Manage gift configurations. Click to view details.
-                </CardDescription>
-              </div>
-              <AddGiftDialog onGiftAdded={() => mutateGifts()} />
-            </CardHeader>
-            <CardContent>
-              {giftsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-muted-foreground">Loading gifts...</div>
-                </div>
-              ) : (
-                <GiftGrid data={gifts} />
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

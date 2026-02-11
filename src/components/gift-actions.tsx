@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Gift } from "@/types/gift";
-import { useDeleteEmoji, useAppConfig } from "@/hooks/useAppConfig";
+import { useDeleteEmoji, useAppConfig, useGetAllGifts } from "@/hooks/useAppConfig";
 import { Button } from "@/components/ui/button";
 import { EditGiftDialog } from "./edit-gift-dialog";
 
@@ -30,6 +30,7 @@ export function GiftActions({ gift }: GiftActionsProps) {
       await deleteTrigger();
       toast.success("Gift deleted successfully");
       mutate();
+      useGetAllGifts()
     } catch (error: any) {
       toast.error(error.message || "Failed to delete gift");
     }

@@ -34,7 +34,7 @@ export function NavMain({
             }
             return (
             <SidebarMenuItem key={item.title} >
-              <SidebarMenuButton tooltip={item.title} onClick={() => router.push(item.url)}>
+              <SidebarMenuButton tooltip={item.title} onClick={() => router.push(item.url)} className="cursor">
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
               </SidebarMenuButton>

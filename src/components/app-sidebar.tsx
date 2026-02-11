@@ -6,7 +6,7 @@ import {
   IconUsers,
   IconUsersPlus,
   IconSettings,
-  IconTrophy,
+  IconTrophy,IconGift
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/nav-documents";
@@ -59,6 +59,12 @@ const data = {
       title: "Teams",
       url: "/teams",
       icon: IconTrophy,
+      hideUser: ["agent", "master"],
+    },
+    {
+      title: "Gifts",
+      url: "/gift",
+      icon: IconGift,
       hideUser: ["agent", "master"],
     },
   ],
