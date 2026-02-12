@@ -162,10 +162,21 @@ export function UserProfileCard({ user, onUpdate }: UserProfileProps) {
         </CardContent>
       </Card>
 
-      {/* Wallet Info */}
+      {/* Wallet Info  */}
       <Card className="shadow-md transition hover:shadow-lg">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-xl font-semibold">Wallet</CardTitle>
+          {getUserType() !== "agent" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <IconEdit size={16} />
+              Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <WalletItem
@@ -196,18 +207,7 @@ export function UserProfileCard({ user, onUpdate }: UserProfileProps) {
       {/* Account Info */}
       <Card className="shadow-md transition hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl font-semibold">Account Infos</CardTitle>
-          {getUserType() !== "agent" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <IconEdit size={16} />
-              Edit
-            </Button>
-          )}
+          <CardTitle className="text-xl font-semibold">Account Info</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           {/* Active Status or Last Login */}
@@ -248,35 +248,6 @@ export function UserProfileCard({ user, onUpdate }: UserProfileProps) {
             <span className="font-semibold text-base">
               {formatPlaytime(totalSeconds / 1000)}
             </span>
-          </div>
-
-          {/* Coin */}
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <IconCoins size={16} />
-              Coin
-            </span>
-            <span className="font-semibold text-base">{user?.coin || 0}</span>
-          </div>
-
-          {/* Diamond */}
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <IconDiamond size={16} />
-              Diamond
-            </span>
-            <span className="font-semibold text-base">
-              {user?.diamond || 0}
-            </span>
-          </div>
-
-          {/* Lives */}
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <IconHeart size={16} />
-              Lives
-            </span>
-            <span className="font-semibold text-base">{user?.live || 0}</span>
           </div>
 
           {/* Wallet Balance */}

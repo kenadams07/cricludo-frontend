@@ -33,7 +33,7 @@ function SortableItem({ gift }: { gift: Gift }) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} >
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <GiftCard gift={gift} />
     </div>
   );
@@ -78,7 +78,7 @@ export function GiftGrid({ data }: GiftGridProps) {
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {items.map((gift) => (
-            <SortableItem key={gift._id} gift={gift}  />
+            <SortableItem key={gift._id} gift={gift} />
           ))}
         </div>
       </SortableContext>

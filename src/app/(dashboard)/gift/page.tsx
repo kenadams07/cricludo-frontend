@@ -50,7 +50,7 @@ export default function AppConfigPage() {
       </div>
     );
   }
-
+ 
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center gap-2">
@@ -66,9 +66,7 @@ export default function AppConfigPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Gift Management</CardTitle>
-                <CardDescription>
-                  Manage gift configurations. Click to view details.
-                </CardDescription>
+ 
               </div>
               <AddGiftDialog onGiftAdded={() => mutateGifts()} />
             </CardHeader>

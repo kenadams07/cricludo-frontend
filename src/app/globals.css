@@ -181,3 +181,6 @@
 .cursor{
   cursor: pointer;
 }
+.drag{
+  cursor:grabbing !important;
+}
