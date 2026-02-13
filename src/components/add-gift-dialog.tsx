@@ -4,7 +4,7 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Gift } from "@/types/gift";
-import { useAddEmoji, useUploadFile, useAppConfig } from "@/hooks/useGift";
+import { useAddEmoji, useUploadFile, useAppConfig } from "@/hooks/useAppConfig";
 import { useMultipleImagePreview } from "@/hooks/useImagePreview";
 import { giftIdExists } from "@/lib/gift-utils";
 import { Button } from "@/components/ui/button";

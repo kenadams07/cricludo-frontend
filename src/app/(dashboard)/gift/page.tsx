@@ -16,7 +16,7 @@ import {
 import {
   useAppConfig,
   useGetAllGifts,
-} from "@/hooks/useGift";
+} from "@/hooks/useAppConfig";
 import { GiftGrid } from "@/components/gift-grid";
 import { AddGiftDialog } from "@/components/add-gift-dialog";
  

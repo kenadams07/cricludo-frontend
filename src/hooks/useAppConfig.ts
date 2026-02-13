@@ -209,32 +209,19 @@ export function useUpdateGiftsOrder() {
     any,
     unknown,
     string,
-    { emojiOrders: { id: string; order: number }[] }
+    { giftIds:string[] }
   >(
     `${API_URL}/gifts/order/update`,
-    async (
-      url: string,
-      { arg }: { arg: { emojiOrders: { id: string; order: number }[] } },
-    ) => {
-      if (!arg.emojiOrders || !Array.isArray(arg.emojiOrders)) {
-        throw new Error("Invalid emojiOrders array");
+    async (url: string, { arg }: { arg: { giftIds: string[] } }) => {
+      if (!Array.isArray(arg.giftIds)) {
+        throw new Error("Invalid giftIds array");
       }
-
-      const validOrders = validateAndMapGiftOrders(arg.emojiOrders);
-
-      if (validOrders.length !== arg.emojiOrders.length) {
-        throw new Error(
-          `Invalid gift IDs detected. Only ${validOrders.length} of ${arg.emojiOrders.length} items are valid.`,
-        );
-      }
-
-      const payload = { emojiOrders: validOrders };
 
       return fetchWithAuth<any>(url, {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(arg),
       });
-    },
+    }
   );
 }
 
