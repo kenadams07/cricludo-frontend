@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Gift } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
- 
+
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   Card,
@@ -14,18 +14,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  useAppConfig,
   useGetAllGifts,
 } from "@/hooks/useAppConfig";
 import { GiftGrid } from "@/components/gift-grid";
 import { AddGiftDialog } from "@/components/add-gift-dialog";
- 
+
 export default function AppConfigPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const getUserType = useAuthStore((s) => s.getUserType);
   const setTitle = useAuthStore((t) => t.setTitle);
-  const { data, isLoading, mutate } = useAppConfig();
   const {
     data: giftsData,
     isLoading: giftsLoading,
@@ -33,7 +31,6 @@ export default function AppConfigPage() {
   } = useGetAllGifts();
 
   const userType = getUserType();
-  const config = data?.data || {};
   const gifts = giftsData?.data || [];
 
   useEffect(() => {
@@ -43,14 +40,14 @@ export default function AppConfigPage() {
     }
   }, [userType, router, setTitle]);
 
-  if (isLoading) {
+  if (giftsLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-lg">Loading...</div>
       </div>
     );
   }
- 
+
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center gap-2">
@@ -59,14 +56,14 @@ export default function AppConfigPage() {
       </div>
 
       <Tabs defaultValue="gifts" className="w-full">
-      
- 
+
+
         <TabsContent value="gifts" className="space-y-4 mt-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Gift Management</CardTitle>
- 
+
               </div>
               <AddGiftDialog onGiftAdded={() => mutateGifts()} />
             </CardHeader>

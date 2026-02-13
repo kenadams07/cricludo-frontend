@@ -22,7 +22,7 @@ interface GiftGridProps {
   data: Gift[];
 }
 
-function SortableItem({ gift }: { gift: Gift }) {
+function SortableItem({ gift, onDelete }: { gift: Gift; onDelete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: gift._id });
 
@@ -32,8 +32,13 @@ function SortableItem({ gift }: { gift: Gift }) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <GiftCard gift={gift} drag={true} />
+    <div ref={setNodeRef} style={style}>
+      <GiftCard
+        gift={gift}
+        dragHandleProps={listeners}
+        dragAttributes={attributes}
+        onDelete={onDelete}
+      />
     </div>
   );
 }
@@ -51,16 +56,20 @@ export function GiftGrid({ data }: GiftGridProps) {
 
   useEffect(() => {
     if (!isDirty) setItems(sortedInitial);
-  }, [sortedInitial, isDirty]);
+  }, [sortedInitial]);
 
   useEffect(() => {
     const changed =
       items.length !== sortedInitial.length ||
       items.some((g, i) => g._id !== sortedInitial[i]?._id);
     console.log(changed, "changed");
-    console.log(items)
+    console.log(items);
     setIsDirty(() => changed);
   }, [items, sortedInitial]);
+
+  const handleDeleteItem = (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
 
   function handleDragEnd(event: any) {
     const { active, over } = event;
@@ -74,15 +83,15 @@ export function GiftGrid({ data }: GiftGridProps) {
   }
 
   async function handleSave() {
-  const giftIds = items.map((g) => g.id);
-  try {
-    await trigger({ giftIds });
-    setIsDirty(false);
-  } catch (error) {
-    console.error("Failed to save order:", error);
-    setIsDirty(false);
+    const giftIds = items.map((g) => g.id);
+    try {
+      await trigger({ giftIds });
+      setIsDirty(false);
+    } catch (error) {
+      console.error("Failed to save order:", error);
+      setIsDirty(false);
+    }
   }
-}
 
   if (items.length === 0) {
     return (
@@ -100,17 +109,21 @@ export function GiftGrid({ data }: GiftGridProps) {
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {items.map((gift) => (
-            <SortableItem key={gift._id} gift={gift} />
+            <SortableItem key={String(gift._id)} gift={gift} onDelete={handleDeleteItem} />
           ))}
         </div>
       </SortableContext>
 
       <div className="mt-5">
-        
         {isDirty && (
-          <Button onClick={handleSave} disabled={isMutating}>
-            {isMutating ? "Saving..." : "Save"}
-          </Button>
+          <div className="flex gap-3">
+            <Button className="bg-green-900" type="button" onClick={handleSave} disabled={isMutating}>
+              {isMutating ? "Saving..." : "Save"}
+            </Button>
+            <Button className="bg-gray-700" type="button" onClick={() => setItems(() => sortedInitial)}>
+              cancel
+            </Button>
+          </div>
         )}
       </div>
     </DndContext>

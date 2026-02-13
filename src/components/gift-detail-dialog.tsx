@@ -7,8 +7,9 @@ import { Gift } from "@/types/gift";
 import {
   useDeleteEmoji,
   useGetFileUrl,
-  useAppConfig,
 } from "@/hooks/useAppConfig";
+import { mutate as globalMutate } from "swr";
+import { API_URL } from "@/lib/config";
 import { getCoinTypeStyles, formatGiftPrice } from "@/lib/gift-utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ interface GiftDetailDialogProps {
   gift: Gift;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDelete?: (id: string) => void;
 }
 
 /**
@@ -34,6 +36,7 @@ export function GiftDetailDialog({
   gift,
   open,
   onOpenChange,
+  onDelete,
 }: GiftDetailDialogProps) {
   const { data: imageUrlData } = useGetFileUrl(gift.emogiPicUrl || "");
   const { data: spritImageUrlData } = useGetFileUrl(
@@ -42,7 +45,6 @@ export function GiftDetailDialog({
   const { trigger: deleteTrigger, isMutating: isDeleting } = useDeleteEmoji(
     gift.id,
   );
-  const { mutate } = useAppConfig();
 
   const handleDelete = async () => {
     if (!confirm(`Are you sure you want to delete gift ${gift.id}?`)) {
@@ -52,7 +54,14 @@ export function GiftDetailDialog({
     try {
       await deleteTrigger();
       toast.success("Gift deleted successfully");
-      mutate();
+
+      // Update local state in grid (if callback provided)
+      if (onDelete) onDelete(gift.id);
+
+      // Refresh global app config and gifts list
+      globalMutate(`${API_URL}/config-apk`);
+      globalMutate(`${API_URL}/gifts`);
+
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || "Failed to delete gift");

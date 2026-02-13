@@ -8,8 +8,9 @@ import {
   useUpdateEmoji,
   useUploadFile,
   useGetFileUrl,
-  useAppConfig,
 } from "@/hooks/useAppConfig";
+import { mutate as globalMutate } from "swr";
+import { API_URL } from "@/lib/config";
 import { useMultipleImagePreview } from "@/hooks/useImagePreview";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +62,6 @@ export function EditGiftDialog({ gift, onClose }: EditGiftDialogProps) {
     gift.id,
   );
   const { trigger: uploadTrigger } = useUploadFile();
-  const { mutate } = useAppConfig();
   const { data: imageUrlData } = useGetFileUrl(formData.emogiPicUrl || "");
   const { data: spritImageUrlData } = useGetFileUrl(
     formData.emogiSpritPicUrl || "",
@@ -100,7 +100,8 @@ export function EditGiftDialog({ gift, onClose }: EditGiftDialogProps) {
       toast.success("Gift updated successfully");
       setOpen(false);
       clearAll();
-      mutate();
+      globalMutate(`${API_URL}/config-apk`);
+      globalMutate(`${API_URL}/gifts`);
       if (onClose) {
         onClose();
       }

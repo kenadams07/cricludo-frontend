@@ -4,7 +4,9 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Gift } from "@/types/gift";
-import { useAddEmoji, useUploadFile, useAppConfig } from "@/hooks/useAppConfig";
+import { useAddEmoji, useUploadFile } from "@/hooks/useAppConfig";
+import { mutate as globalMutate } from "swr";
+import { API_URL } from "@/lib/config";
 import { useMultipleImagePreview } from "@/hooks/useImagePreview";
 import { giftIdExists } from "@/lib/gift-utils";
 import { Button } from "@/components/ui/button";
@@ -97,6 +99,8 @@ export function AddGiftDialog({ onGiftAdded }: AddGiftDialogProps) {
       setFormData({ id: "", price: 1000, coinType: "coin" });
       clearAll();
 
+      globalMutate(`${API_URL}/config-apk`);
+      globalMutate(`${API_URL}/gifts`);
       onGiftAdded?.();
     } catch (error: any) {
       toast.error(error.message || "Failed to add gift");
