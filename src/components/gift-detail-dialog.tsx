@@ -6,8 +6,7 @@ import { toast } from "sonner";
 import { Gift } from "@/types/gift";
 import {
   useDeleteEmoji,
-  useGetFileUrl,
-} from "@/hooks/useAppConfig";
+ } from "@/hooks/useAppConfig";
 import { mutate as globalMutate } from "swr";
 import { API_URL } from "@/lib/config";
 import { getCoinTypeStyles, formatGiftPrice } from "@/lib/gift-utils";
@@ -38,10 +37,7 @@ export function GiftDetailDialog({
   onOpenChange,
   onDelete,
 }: GiftDetailDialogProps) {
-  const { data: imageUrlData } = useGetFileUrl(gift.emogiPicUrl || "");
-  const { data: spritImageUrlData } = useGetFileUrl(
-    gift.emogiSpritPicUrl || "",
-  );
+   
   const { trigger: deleteTrigger, isMutating: isDeleting } = useDeleteEmoji(
     gift.id,
   );
@@ -57,9 +53,6 @@ export function GiftDetailDialog({
 
       // Update local state in grid (if callback provided)
       if (onDelete) onDelete(gift.id);
-
-      // Refresh global app config and gifts list
-      globalMutate(`${API_URL}/config-apk`);
       globalMutate(`${API_URL}/gifts`);
 
       onOpenChange(false);
@@ -122,9 +115,9 @@ export function GiftDetailDialog({
                 Image
               </Label>
               <div className="mt-2">
-                {imageUrlData?.url ? (
+                {gift?.emogiPicUrl ? (
                   <img
-                    src={imageUrlData.url}
+                    src={gift?.emogiPicUrl}
                     alt={gift.id}
                     className="w-full max-w-xs h-auto rounded-lg border"
                   />
@@ -140,9 +133,9 @@ export function GiftDetailDialog({
                 Sprite Image
               </Label>
               <div className="mt-2">
-                {spritImageUrlData?.url ? (
+                {gift?.emogiSpritPicUrl ? (
                   <img
-                    src={spritImageUrlData.url}
+                    src={gift?.emogiSpritPicUrl}
                     alt={gift.id}
                     className="w-full max-w-xs h-auto rounded-lg border"
                   />

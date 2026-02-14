@@ -4,7 +4,7 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Gift } from "@/types/gift";
-import { useAddEmoji, useUploadFile } from "@/hooks/useAppConfig";
+import { useAddEmoji } from "@/hooks/useAppConfig";
 import { mutate as globalMutate } from "swr";
 import { API_URL } from "@/lib/config";
 import { useMultipleImagePreview } from "@/hooks/useImagePreview";
@@ -54,7 +54,7 @@ export function AddGiftDialog({ onGiftAdded }: AddGiftDialogProps) {
   } = useMultipleImagePreview();
 
   const { trigger: addTrigger, isMutating: isAdding } = useAddEmoji();
-  const { trigger: uploadTrigger } = useUploadFile();
+  // const { trigger: uploadTrigger } = useUploadFile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,32 +76,53 @@ export function AddGiftDialog({ onGiftAdded }: AddGiftDialogProps) {
     }
 
     try {
-      // Upload images
-      const imageRes = await uploadTrigger({ file: imageFile, type: "image" });
-      const spritImageRes = await uploadTrigger({
-        file: spritImageFile,
-        type: "image",
-      });
+      const fd = new FormData();
 
-      // Create gift
-      await addTrigger({
-        id: formData.id.trim(),
-        price: formData.price,
-        coinType: formData.coinType,
-        emogiPicUrl: imageRes.key,
-        emogiSpritPicUrl: spritImageRes.key,
-      });
+      fd.append("id", formData.id.trim());
+      fd.append("price", String(formData.price));
+      fd.append("coinType", formData.coinType);
+
+      // Send actual files
+      fd.append("emogiPicUrl", imageFile);
+      fd.append("emogiSpritPicUrl", spritImageFile);
+
+      await addTrigger(fd);
 
       toast.success("Gift added successfully");
       setOpen(false);
 
-      // Reset form
       setFormData({ id: "", price: 1000, coinType: "coin" });
       clearAll();
 
-      globalMutate(`${API_URL}/config-apk`);
       globalMutate(`${API_URL}/gifts`);
       onGiftAdded?.();
+
+
+      // const imageRes = await uploadTrigger({ file: imageFile, type: "image" });
+      // const spritImageRes = await uploadTrigger({
+      //   file: spritImageFile,
+      //   type: "image",
+      // });
+
+      // // Create gift
+      // await addTrigger({
+      //   id: formData.id.trim(),
+      //   price: formData.price,
+      //   coinType: formData.coinType,
+      //   emogiPicUrl: imageRes.key,
+      //   emogiSpritPicUrl: spritImageRes.key,
+      // });
+
+      // toast.success("Gift added successfully");
+      // setOpen(false);
+
+      // // Reset form
+      // setFormData({ id: "", price: 1000, coinType: "coin" });
+      // clearAll();
+
+      // globalMutate(`${API_URL}/config-apk`);
+      // globalMutate(`${API_URL}/gifts`);
+      // onGiftAdded?.();
     } catch (error: any) {
       toast.error(error.message || "Failed to add gift");
     }

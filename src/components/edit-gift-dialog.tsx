@@ -4,11 +4,7 @@ import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Gift, GiftFormData } from "@/types/gift";
-import {
-  useUpdateEmoji,
-  useUploadFile,
-  useGetFileUrl,
-} from "@/hooks/useAppConfig";
+import { useUpdateEmoji } from "@/hooks/useAppConfig";
 import { mutate as globalMutate } from "swr";
 import { API_URL } from "@/lib/config";
 import { useMultipleImagePreview } from "@/hooks/useImagePreview";
@@ -61,46 +57,27 @@ export function EditGiftDialog({ gift, onClose }: EditGiftDialogProps) {
   const { trigger: updateTrigger, isMutating: isUpdating } = useUpdateEmoji(
     gift.id,
   );
-  const { trigger: uploadTrigger } = useUploadFile();
-  const { data: imageUrlData } = useGetFileUrl(formData.emogiPicUrl || "");
-  const { data: spritImageUrlData } = useGetFileUrl(
-    formData.emogiSpritPicUrl || "",
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      let imageKey = formData.emogiPicUrl;
-      let spritImageKey = formData.emogiSpritPicUrl;
+      const fd = new FormData();
+      fd.append("price", String(formData.price));
+      fd.append("coinType", formData.coinType);
+      if (imageFile) fd.append("emogiPicUrl", imageFile);
+      if (spritImageFile) fd.append("emogiSpritPicUrl", spritImageFile);
 
-      if (imageFile) {
-        const imageRes = await uploadTrigger({
-          file: imageFile,
-          type: "image",
-        });
-        imageKey = imageRes.key;
-      }
+      if (!imageFile && formData.emogiPicUrl)
+        fd.append("emogiPicUrl", formData.emogiPicUrl);
+      if (!spritImageFile && formData.emogiSpritPicUrl)
+        fd.append("emogiSpritPicUrl", formData.emogiSpritPicUrl);
 
-      if (spritImageFile) {
-        const spritImageRes = await uploadTrigger({
-          file: spritImageFile,
-          type: "image",
-        });
-        spritImageKey = spritImageRes.key;
-      }
-
-      await updateTrigger({
-        price: formData.price,
-        coinType: formData.coinType,
-        emogiPicUrl: imageKey,
-        emogiSpritPicUrl: spritImageKey,
-      });
+      await updateTrigger(fd);
 
       toast.success("Gift updated successfully");
       setOpen(false);
       clearAll();
-      globalMutate(`${API_URL}/config-apk`);
       globalMutate(`${API_URL}/gifts`);
       if (onClose) {
         onClose();
@@ -177,10 +154,10 @@ export function EditGiftDialog({ gift, onClose }: EditGiftDialogProps) {
                   Remove
                 </Button>
               </div>
-            ) : imageUrlData?.url ? (
+            ) : formData?.emogiSpritPicUrl ? (
               <div className="space-y-2">
                 <img
-                  src={imageUrlData.url}
+                  src={formData?.emogiSpritPicUrl}
                   alt="Current"
                   className="w-32 h-32 object-cover rounded-lg border"
                 />
@@ -214,10 +191,10 @@ export function EditGiftDialog({ gift, onClose }: EditGiftDialogProps) {
                   Remove
                 </Button>
               </div>
-            ) : spritImageUrlData?.url ? (
+            ) : formData?.emogiSpritPicUrl ? (
               <div className="space-y-2">
                 <img
-                  src={spritImageUrlData.url}
+                  src={formData.emogiSpritPicUrl}
                   alt="Current"
                   className="w-32 h-32 object-cover rounded-lg border"
                 />

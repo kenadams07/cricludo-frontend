@@ -94,21 +94,34 @@ export function useAppConfig() {
 }
 
 export function useAddGift() {
-  return useSWRMutation<GiftData, unknown, string, any>(
+  return useSWRMutation<GiftData, unknown, string, FormData>(
     `${API_URL}/gifts`,
-    PostRequest,
+    async (url: string, { arg }: { arg: FormData }) => {
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        body: arg, // ✅ FormData
+      });
+
+      if (!res.ok) throw new Error("Failed to add gift");
+      return res.json();
+    }
   );
 }
 
 export function useUpdateGift(giftId: string) {
-  return useSWRMutation<GiftData, unknown, string, any>(
+  return useSWRMutation<GiftData, unknown, string, FormData>(
     `${API_URL}/gifts/${giftId}`,
-    async (url: string, { arg }: { arg: any }) => {
-      return fetchWithAuth<GiftData>(url, {
+    async (url: string, { arg }: { arg: FormData }) => {
+      const res = await fetch(url, {
         method: "PUT",
-        body: JSON.stringify(arg),
+        credentials: "include",
+        body: arg, // ✅ FormData
       });
-    },
+
+      if (!res.ok) throw new Error("Failed to update gift");
+      return res.json();
+    }
   );
 }
 
@@ -136,51 +149,51 @@ export function useDeleteEmoji(emojiId: string) {
   return useDeleteGift(emojiId);
 }
 
-export function useUploadFile() {
-  return useSWRMutation<
-    FileUploadResponse,
-    unknown,
-    string,
-    { file: File; type: "image" | "animation" }
-  >(
-    `${API_URL}/config-apk/upload`,
-    async (
-      url: string,
-      { arg }: { arg: { file: File; type: "image" | "animation" } },
-    ) => {
-      const formData = new FormData();
-      formData.append("file", arg.file);
-      formData.append("type", arg.type);
+// export function useUploadFile() {
+//   return useSWRMutation<
+//     FileUploadResponse,
+//     unknown,
+//     string,
+//     { file: File; type: "image" | "animation" }
+//   >(
+//     `${API_URL}/config-apk/upload`,
+//     async (
+//       url: string,
+//       { arg }: { arg: { file: File; type: "image" | "animation" } },
+//     ) => {
+//       const formData = new FormData();
+//       formData.append("file", arg.file);
+//       formData.append("type", arg.type);
 
-      const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
+//       const res = await fetch(url, {
+//         method: "POST",
+//         credentials: "include",
+//         body: formData,
+//       });
 
-      if (!res.ok) {
-        try {
-          const error = await res.json();
-          throw new Error(error.message || "Failed to upload file");
-        } catch (e) {
-          throw new Error("Failed to upload file");
-        }
-      }
+//       if (!res.ok) {
+//         try {
+//           const error = await res.json();
+//           throw new Error(error.message || "Failed to upload file");
+//         } catch (e) {
+//           throw new Error("Failed to upload file");
+//         }
+//       }
 
-      return res.json();
-    },
-  );
-}
+//       return res.json();
+//     },
+//   );
+// }
 
-export function useGetFileUrl(key: string) {
-  return useSWR<FileUrlResponse>(
-    key ? `${API_URL}/config-apk/file/${encodeURIComponent(key)}` : null,
-    (url: string) => fetchWithAuth<FileUrlResponse>(url),
-    {
-      revalidateOnFocus: false,
-    },
-  );
-}
+// export function useGetFileUrl(key: string) {
+//   return useSWR<FileUrlResponse>(
+//     key ? `${API_URL}/config-apk/file/${encodeURIComponent(key)}` : null,
+//     (url: string) => fetchWithAuth<FileUrlResponse>(url),
+//     {
+//       revalidateOnFocus: false,
+//     },
+//   );
+// }
 
 export function useUpdateAppConfig() {
   return useSWRMutation<AppConfigResponse, unknown, string, any>(

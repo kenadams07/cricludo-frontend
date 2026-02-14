@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Gift } from "@/types/gift";
-import { useGetFileUrl } from "@/hooks/useAppConfig";
 import { getCoinTypeStyles } from "@/lib/gift-utils";
 import { ImageDisplay } from "./gift-image-preview";
 import { GiftDetailDialog } from "./gift-detail-dialog";
@@ -27,8 +26,7 @@ export function GiftCard({
   onDelete,
 }: GiftCardProps) {
   const [openDetail, setOpenDetail] = useState(false);
-  const { data: imageUrlData } = useGetFileUrl(gift.emogiPicUrl || "");
-
+ 
   return (
     <>
       <div
@@ -47,7 +45,7 @@ export function GiftCard({
         )}
 
         <div className="aspect-square mb-3 relative overflow-hidden rounded-md bg-muted">
-          <ImageDisplay imageUrl={imageUrlData?.url} alt={gift.id} />
+          <ImageDisplay imageUrl={gift?.emogiPicUrl} alt={gift.id} />
         </div>
 
         <div className="space-y-1">
