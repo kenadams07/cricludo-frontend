@@ -68,9 +68,9 @@ export function prepareDashboardData(data: {
   };
 
   const userTableData = users.map((user) => {
-    const analysis = analysisMap.get(user._id) || {};
-    const wallet = walletMap.get(user._id) || {};
-    const chart = usersChartData[user._id] || {};
+    const analysis = analysisMap.get(user.userId) || {};
+    const wallet = walletMap.get(user.userId) || {};
+    const chart = usersChartData[user.userId] || {};
     const formattedDate = new Date().toISOString().split("T")[0];
 
     const todayTotalTimeSpent =
@@ -101,7 +101,7 @@ export function prepareDashboardData(data: {
       loginHistory: analysis.loginHistory || [],
       gameSessions: analysis.gameSessions || [],
       activityStats: analysis.activityStats || [],
-      id: user._id,
+      id: user.userId,
       isVIP: !!user.vip_user,
       isGuest: !!user.is_guest,
       isAgent: !!user.is_agent,

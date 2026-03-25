@@ -189,7 +189,7 @@ export function DataTable({
       globalFilter,
     },
     onGlobalFilterChange: setGlobalFilter,
-    getRowId: (row) => row.id.toString(),
+    getRowId: (row) => row.userId.toString(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,

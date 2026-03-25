@@ -2,6 +2,7 @@ import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
 import { GetRequest, PostRequest } from "@/lib/fetcher";
 import { API_URL } from "@/lib/config";
+import { useRouter } from "next/navigation";
 
 // Type definitions for API responses
 interface AppConfigData {
@@ -56,11 +57,13 @@ const fetchWithAuth = async <T>(
   });
 
   if (!res.ok) {
-    const errorMessage =
+    const error = new Error(
       options?.method === "DELETE"
         ? "Failed to delete gift"
-        : `Failed to fetch from ${url}`;
-    throw new Error(errorMessage);
+        : `Failed to fetch from ${url}`,
+    );
+    (error as any).status = res.status;
+    throw error;
   }
 
   return res.json();
@@ -84,11 +87,19 @@ const validateAndMapGiftOrders = (items: any[]) => {
 };
 
 export function useAppConfig() {
+  const router = useRouter();
+
   return useSWR<AppConfigResponse>(
     `${API_URL}/config-apk`,
     (url: string) => fetchWithAuth<AppConfigResponse>(url),
     {
       revalidateOnFocus: false,
+
+      onError: (error) => {
+        if (error.message.includes("401") || error.status === 401) {
+          router.push("/auth/login");
+        }
+      },
     },
   );
 }
@@ -195,11 +206,19 @@ export function useUpdateAppConfig() {
 }
 
 export function useGetAllGifts() {
+  const router = useRouter();
+
   return useSWR<GiftsResponse>(
     `${API_URL}/gifts`,
     (url: string) => fetchWithAuth<GiftsResponse>(url),
     {
       revalidateOnFocus: false,
+
+      onError: (error) => {
+        if (error.status === 401) {
+          router.push("/auth/login");
+        }
+      },
     },
   );
 }

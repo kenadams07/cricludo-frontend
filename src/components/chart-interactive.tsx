@@ -84,13 +84,19 @@ export function ChartInteractiveGeneric({
   config: Genericconfig;
   title?: string;
 }) {
+  const safeStats = stats || { daily: {}, monthly: {}, yearly: {} };
+
+  const safeConfig = config || {
+    userCount: { label: "Users", color: "#3B82F6" },
+    gameRoomCount: { label: "Rooms", color: "#10B981" },
+  };
+
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState<"90d" | "30d" | "7d">("90d");
-  console.log("stats==========>", stats);
 
   const chartData = React.useMemo(() => {
-    return transformGenericStatsForChart(stats, timeRange, config);
-  }, [stats, timeRange, config]);
+    return transformGenericStatsForChart(safeStats, timeRange, safeConfig);
+  }, [safeStats, timeRange, safeConfig]);
 
   return (
     <Card className="@container/card">
@@ -147,12 +153,12 @@ export function ChartInteractiveGeneric({
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
-          config={config}
+          config={safeConfig}
           className="aspect-auto h-[250px] w-full"
         >
           <AreaChart data={chartData}>
             <defs>
-              {Object.keys(config).map((key) => (
+              {Object.keys(safeConfig).map((key) => (
                 <linearGradient
                   key={key}
                   id={`fill-${key}`}
@@ -163,12 +169,12 @@ export function ChartInteractiveGeneric({
                 >
                   <stop
                     offset="5%"
-                    stopColor={config[key].color}
+                    stopColor={safeConfig[key].color}
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor={config[key].color}
+                    stopColor={safeConfig[key].color}
                     stopOpacity={0.1}
                   />
                 </linearGradient>
@@ -224,7 +230,7 @@ export function ChartInteractiveGeneric({
                             className="flex justify-between gap-4 text-sm"
                           >
                             <span className="text-muted-foreground">
-                              {config[key]?.label ?? key}
+                              {safeConfig[key]?.label ?? key}
                             </span>
                             <span className="font-medium">{entry.value}</span>
                           </div>
@@ -236,13 +242,13 @@ export function ChartInteractiveGeneric({
               }}
             />
 
-            {Object.keys(config).map((key) => (
+            {Object.keys(safeConfig).map((key) => (
               <Area
                 key={key}
                 dataKey={key}
                 type="monotone"
                 fill={`url(#fill-${key})`}
-                stroke={config[key].color}
+                stroke={safeConfig[key].color}
               />
             ))}
           </AreaChart>

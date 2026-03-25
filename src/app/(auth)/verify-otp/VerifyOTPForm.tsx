@@ -77,7 +77,7 @@ export default function VerifyOtpForm() {
 
   const handleKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputsRef.current[index - 1]?.focus();
@@ -88,7 +88,12 @@ export default function VerifyOtpForm() {
     setLoading(true);
     const code = otp.join("");
     try {
-      const res = await triggerVerifyEmail({ email: verifyEmail, code, isLogin: isLogin });
+      const res = await triggerVerifyEmail({
+        email: verifyEmail,
+        code,
+        isLogin: isLogin,
+        skip: true,
+      });
 
       if (res.code) {
         toast.error(res.message || "❌ Invalid OTP, please try again.");
@@ -102,10 +107,10 @@ export default function VerifyOtpForm() {
             firstName: capitalize(res.user.firstName),
             lastName: capitalize(res.user.lastName),
             name: `${capitalize(res.user.firstName)} ${capitalize(
-              res.user.lastName
+              res.user.lastName,
             )}`,
             avatar: `${capitalize(
-              res.user.firstName?.charAt(0) || "?"
+              res.user.firstName?.charAt(0) || "?",
             )}${capitalize(res.user.lastName?.charAt(0) || "?")}`,
             userType: res?.user?.userType || "unknown",
           });

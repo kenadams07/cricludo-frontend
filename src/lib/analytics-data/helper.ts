@@ -71,7 +71,7 @@ export function generateStats(
   analysisData: any[],
 ): StatsByUser {
   const stats: StatsByUser = Object.create(null);
-  const userMap = new Map(users.map((u) => [u._id, u]));
+  const userMap = new Map(users.map((u) => [u.userId, u]));
 
   // ---------------------------
   // Index analysisData by userId

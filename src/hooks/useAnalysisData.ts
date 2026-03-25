@@ -10,72 +10,96 @@ export function useUsersAnalysisData() {
   const store = useAnalysisStore.getState();
 
   const swr = useSWR(
-    `${API_URL}/analysis/data`,
+    `${API_URL}/os-analysis/data`,
     async (url: string) => {
+      store.setLoading(true);
+
       const res = await fetcher(url, {
         credentials: "include",
       });
+
       if (res?.code >= 20001 && res?.code <= 20011) {
         router.push("/login");
         return null;
       }
+
       if (!res || res.error || res.status >= 400) {
         store.setLoading(false);
         throw new Error(res?.message || "Failed to fetch analysis data");
       }
+
       return res;
     },
     {
-      refreshInterval: 60_000,
+      // ⭐ IMPORTANT — heavy analytics API → reduce refresh
+      refreshInterval: 5 * 60 * 1000,
+      dedupingInterval: 5 * 60 * 1000,
+
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      dedupingInterval: 60_000,
 
       onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
-        if (
-          error
-        ) {
+        store.setLoading(false);
+        if (retryCount >= 1) return;
+        setTimeout(() => revalidate({ retryCount }), 5000);
+      },
+
+      onError: (error) => {
+        if (error.status === 401) {
+          router.push("/auth/login");
+        }
+      },
+
+      onSuccess: (newData) => {
+        if (!newData?.data) {
           store.setLoading(false);
           return;
         }
 
-        if (retryCount >= 1) return;
+        // ⭐ still needed for user table + match stats
+        const dashboard = prepareDashboardData(newData.data);
 
-        setTimeout(() => revalidate({ retryCount }), 5000);
-      },
+        // ⭐ override totals from OpenSearch aggregation
+        const summary = newData.data.summary;
 
-      onSuccess: (newData) => {
-        if (!newData?.data) return;
+        if (summary) {
+          dashboard.totalUsers = summary.totalUsers;
+          dashboard.totalRoomsCreated = summary.totalRoomsCreated;
+          dashboard.todayRoomSettled = summary.todayRoomSettled;
+          dashboard.totalCoin = summary.totalCoin;
+          dashboard.totalDiamond = summary.totalDiamond;
+          dashboard.totalLives = summary.totalLives;
 
-        const {
-          totalUsers,
-          activeUsers,
-          activeUserPercent,
-          totalRoomsCreated,
-          todayRoomSettled,
-          totalCoin,
-          totalDiamond,
-          totalLives,
-          roomsByDate,
-          userTableData,
-          chartData,
-        } = prepareDashboardData(newData.data);
+          // histogram conversion
+          dashboard.roomsByDate = Object.fromEntries(
+            (summary.roomsByDate || []).map((b: any) => [
+              b.key_as_string?.slice(0, 10),
+              b.doc_count,
+            ]),
+          );
+        }
 
-        store.setLoading(true);
-        store.setTotalUsers(totalUsers);
-        store.setActiveUsers(activeUsers);
-        store.setActiveUserPercent(activeUserPercent);
-        store.setTotalRoomsCreated(totalRoomsCreated);
-        store.setTodayRoomSettled(todayRoomSettled);
-        store.setTotalCoin(totalCoin);
-        store.setTotalDiamond(totalDiamond);
-        store.setTotalLives(totalLives);
-        store.setRoomsByDate(roomsByDate);
-        store.setUserTableData(userTableData);
-        store.setChartData(chartData);
+        // ⭐ VERY IMPORTANT safeguard (large dataset)
+        const safeUserTable =
+          dashboard.userTableData?.length > 1500
+            ? dashboard.userTableData.slice(0, 1500)
+            : dashboard.userTableData;
+
+        store.setTotalUsers(dashboard.totalUsers);
+        store.setActiveUsers(dashboard.activeUsers);
+        store.setActiveUserPercent(dashboard.activeUserPercent);
+        store.setTotalRoomsCreated(dashboard.totalRoomsCreated);
+        store.setTodayRoomSettled(dashboard.todayRoomSettled);
+        store.setTotalCoin(dashboard.totalCoin);
+        store.setTotalDiamond(dashboard.totalDiamond);
+        store.setTotalLives(dashboard.totalLives);
+        store.setRoomsByDate(dashboard.roomsByDate);
+        store.setUserTableData(safeUserTable);
+        store.setChartData(dashboard.chartData);
+
         store.setLoading(false);
       },
-    }
+    },
   );
 
   return swr;

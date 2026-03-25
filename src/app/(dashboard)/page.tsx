@@ -4,7 +4,7 @@ import { SectionCards } from "@/components/section-cards";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import z from "zod";
 import { ChartInteractiveGeneric } from "@/components/chart-interactive";
 import { IconCrown, IconShield, IconUser } from "@tabler/icons-react";
@@ -13,6 +13,7 @@ import UserAvatar from "@/components/user-avatar";
 import { formatPlaytime, normalizeStats } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { useUsersPage } from "@/hooks/useUsersPage";
 
 const schema = z.object({
   id: z.string(),
@@ -179,15 +180,19 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
 
 export default function DashboardPage() {
   const userTableData = useAnalysisStore((state) => state.userTableData);
-  let chartData = useAnalysisStore((state) => state.chartData);
+  const chartData = useAnalysisStore((state) => state.chartData);
+
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
-
   const setTitle = useAuthStore((t) => t.setTitle);
+
+  const [page, setPage] = useState(1);
+
+  useUsersPage(page);
 
   useEffect(() => {
     setTitle("Dashboard Overview");
-    if (user.userType === "agent") {
+    if (user?.userType === "agent") {
       router.push(`user/${user?.user?.id || ""}`);
     }
   }, [setTitle, user]);
@@ -197,6 +202,7 @@ export default function DashboardPage() {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <SectionCards />
+
           <div className="px-4 lg:px-6">
             <ChartInteractiveGeneric
               title="User & Room Stats"
@@ -213,12 +219,27 @@ export default function DashboardPage() {
               }}
             />
           </div>
+
           {userTableData && (
-            <DataTable
-              data={userTableData}
-              columns={columns}
-              rowClickable={true}
-            />
+            <>
+              <DataTable data={userTableData} columns={columns} rowClickable />
+
+              <div className="flex justify-end gap-2 px-6">
+                <button
+                  className="border px-4 py-2"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </button>
+
+                <button
+                  className="border px-4 py-2"
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
