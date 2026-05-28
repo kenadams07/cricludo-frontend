@@ -528,9 +528,7 @@ function CreateEventForm({
             <SelectContent>
               <SelectItem value="none">None</SelectItem>
               {banners.map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.title || b.id}
-                </SelectItem>
+                <SelectItem value={b.id}>{b.title || b.id}</SelectItem>
               ))}
             </SelectContent>
           </Select>
