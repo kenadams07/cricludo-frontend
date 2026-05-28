@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { GiftGrid } from "@/components/gift-grid";
 import { AddGiftDialog } from "@/components/add-gift-dialog";
+import { BannerConfig } from "./banner-config";
 
 /**
  * General Settings Component
@@ -507,11 +508,12 @@ export default function AppConfigPage() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-secondary/90 rounded-md">
+        <TabsList className="grid w-full grid-cols-5 bg-secondary/90 rounded-md">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="bonus">Bonus Settings</TabsTrigger>
           <TabsTrigger value="store">Store Config</TabsTrigger>
           <TabsTrigger value="gifts">Gifts</TabsTrigger>
+          <TabsTrigger value="banner">Banners</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4 mt-6">
@@ -547,6 +549,9 @@ export default function AppConfigPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="banner" className="space-y-4 mt-6">
+          <BannerConfig />
         </TabsContent>
       </Tabs>
     </div>
