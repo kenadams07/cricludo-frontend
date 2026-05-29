@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { formatDistanceToNow, isPast, format } from "date-fns";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { API_URL } from "@/lib/config";
 import { fetcher, GetRequest } from "@/lib/fetcher";
 
@@ -34,10 +36,36 @@ const GAME_TYPES = [
   { value: "cricket", label: "Cricludo" },
   { value: "classic", label: "Classic Ludo" },
 ];
-// categories removed — events are always online
 const PLAYER_LIMITS = [2, 3, 4];
 const TOTAL_OVERS = ["super over", "T5", "T10", "T20", "ODI", "Test"];
 const TIMEZONES = ["IST", "GMT", "UTC", "EST", "PST"];
+const STATUSES = ["upcoming", "active", "completed", "cancelled"] as const;
+
+const StatusConfig: Record<
+  string,
+  { color: string; bgColor: string; textColor: string }
+> = {
+  upcoming: {
+    color: "bg-blue-100",
+    bgColor: "bg-blue-50",
+    textColor: "text-blue-900",
+  },
+  active: {
+    color: "bg-green-100",
+    bgColor: "bg-green-50",
+    textColor: "text-green-900",
+  },
+  completed: {
+    color: "bg-gray-100",
+    bgColor: "bg-gray-50",
+    textColor: "text-gray-900",
+  },
+  cancelled: {
+    color: "bg-red-100",
+    bgColor: "bg-red-50",
+    textColor: "text-red-900",
+  },
+};
 
 export default function EventsPage() {
   const [events, setEvents] = useState<any[]>([]);
@@ -48,7 +76,6 @@ export default function EventsPage() {
   const [banners, setBanners] = useState<any[]>([]);
 
   useEffect(() => {
-    // load banners
     let mounted = true;
     (async () => {
       try {
@@ -79,22 +106,142 @@ export default function EventsPage() {
     loadEvents();
   }, []);
 
-  // CreateEventForm component will handle creating an event
+  // Separate active and expired/completed events
+  const { activeEvents, expiredEvents } = useMemo(() => {
+    const now = new Date();
+    return {
+      activeEvents: events.filter(
+        (ev) =>
+          !["completed", "cancelled"].includes(ev.status) &&
+          (!ev.date || new Date(ev.date) > now),
+      ),
+      expiredEvents: events.filter(
+        (ev) =>
+          ["completed", "cancelled"].includes(ev.status) ||
+          (ev.date && new Date(ev.date) <= now),
+      ),
+    };
+  }, [events]);
+
+  const renderEventCard = (ev: any) => {
+    const eventDate = ev.date ? new Date(ev.date) : null;
+    const status = ev.status || "upcoming";
+    const config = StatusConfig[status] || StatusConfig.upcoming;
+
+    return (
+      <Card key={ev.id || ev._id} className={`${config.bgColor} border-0`}>
+        <CardContent className="p-4">
+          <div className="flex items-start gap-4">
+            <img
+              src={ev.bannerUrl || ev.imageUrl || "/placeholder.png"}
+              alt={ev.name}
+              className="w-32 h-20 object-cover rounded-lg"
+            />
+            <div className="flex-1">
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-lg">{ev.name}</h3>
+                    <Badge className={`${config.color} ${config.textColor}`}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </Badge>
+                  </div>
+                  {eventDate && (
+                    <p className="text-xs text-gray-600">
+                      {format(eventDate, "MMM dd, yyyy • hh:mm a")} (
+                      {ev.timeZone || "UTC"})
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingEvent(ev);
+                      setIsDialogOpen(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={async () => {
+                      if (!confirm("Delete this event?")) return;
+                      await fetcher(`${API_URL}/events/${ev.id}`, {
+                        method: "DELETE",
+                      });
+                      loadEvents();
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                <div className="flex items-center gap-1">
+                  <span className="font-medium">Game Type:</span>
+                  <span>{ev.gameType?.toUpperCase() || "N/A"}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-medium">Players:</span>
+                  <span>
+                    {(ev.players || []).length} / {ev.playerLimit || 4}
+                  </span>
+                </div>
+                {ev.gameType === "cricket" && ev.totalOver && (
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">Total Over:</span>
+                    <span>{ev.totalOver}</span>
+                  </div>
+                )}
+              </div>
+
+              {(ev.players || []).length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-300">
+                  <p className="text-xs font-medium mb-2">Players:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {ev.players.map((p: any) => (
+                      <div
+                        key={p._id || p.id}
+                        className="bg-white px-2 py-1 rounded text-xs"
+                      >
+                        <div className="font-medium">
+                          {p.firstName || p.username || "Unknown"}
+                        </div>
+                        <div className="text-gray-600">{p.email}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Events</h1>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Events Management</h1>
         <Dialog
           open={isDialogOpen}
           onOpenChange={(open) => setIsDialogOpen(open)}
         >
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingEvent(null)}>Add Event</Button>
+            <Button size="lg" onClick={() => setEditingEvent(null)}>
+              + Add New Event
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Create Event</DialogTitle>
+              <DialogTitle>
+                {editingEvent ? "Edit Event" : "Create New Event"}
+              </DialogTitle>
             </DialogHeader>
             <CreateEventForm
               banners={banners}
@@ -113,65 +260,50 @@ export default function EventsPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {loadingEvents ? (
-          <div>Loading events…</div>
-        ) : events.length === 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>No events yet</CardTitle>
-              <CardDescription>
-                Create the first event using the button above.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : (
-          events.map((ev: any) => (
-            <Card key={ev.id || ev._id}>
-              <CardContent className="flex items-center gap-4">
-                <img
-                  src={ev.bannerUrl || ev.imageUrl || "/placeholder.png"}
-                  alt={ev.name}
-                  className="w-32 h-16 object-cover rounded-md"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">{ev.name || ev.id}</div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingEvent(ev);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={async () => {
-                          if (!confirm("Delete this event?")) return;
-                          await fetcher(`${API_URL}/events/${ev.id}`, {
-                            method: "DELETE",
-                          });
-                          loadEvents();
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {(ev.players || []).length} players · {ev.gameType}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+      {loadingEvents ? (
+        <div className="text-center py-8">Loading events…</div>
+      ) : events.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>No events yet</CardTitle>
+            <CardDescription>
+              Create the first event using the button above.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : (
+        <>
+          {/* Active Events Section */}
+          {activeEvents.length > 0 && (
+            <div className="mb-8">
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  Active Events ({activeEvents.length})
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {activeEvents.map(renderEventCard)}
+              </div>
+            </div>
+          )}
+
+          {/* Expired/Completed Events Section */}
+          {expiredEvents.length > 0 && (
+            <div>
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                  Past Events ({expiredEvents.length})
+                </h2>
+              </div>
+              <div className="space-y-3 opacity-80">
+                {expiredEvents.map(renderEventCard)}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -187,15 +319,24 @@ function CreateEventForm({
   onCreated?: () => void;
   onCancel?: () => void;
 }) {
-  // zod schema for validation
+  // Update schema to match new player object structure
   const schema = z.object({
     name: z.string().min(2, "Name is required"),
     date: z.string().min(1, "Date is required"),
     playerLimit: z.number().min(2).max(4),
-    players: z.array(z.string()).optional(),
+    players: z
+      .array(
+        z.object({
+          id: z.string(),
+          username: z.string(),
+          email: z.string(),
+        }),
+      )
+      .optional(),
     gameType: z.string(),
     totalOver: z.string().nullable().optional(),
     bannerId: z.string().optional(),
+    status: z.string().optional(),
     timeZone: z.string().optional(),
   });
 
@@ -220,6 +361,7 @@ function CreateEventForm({
       gameType: initial?.gameType || GAME_TYPES[0].value,
       totalOver: initial?.totalOver || null,
       bannerId: initial?.bannerId || "",
+      status: initial?.status || "upcoming",
       timeZone: initial?.timeZone || TIMEZONES[0],
     },
   });
@@ -236,6 +378,7 @@ function CreateEventForm({
         gameType: initial.gameType || GAME_TYPES[0].value,
         totalOver: initial.totalOver || null,
         bannerId: initial.bannerId || "",
+        status: initial.status || "upcoming",
         timeZone: initial.timeZone || TIMEZONES[0],
       });
     }
@@ -261,9 +404,11 @@ function CreateEventForm({
         ...values,
         date: values.date ? new Date(values.date).toISOString() : null,
       } as any;
-      // normalize placeholder values
+
       if (payload.totalOver === "none") payload.totalOver = null;
       if (payload.bannerId === "none") payload.bannerId = "";
+      if (payload.status === "") payload.status = "upcoming";
+
       if (initial && initial.id) {
         await fetcher(`${API_URL}/events/${initial.id}`, {
           method: "PUT",
@@ -283,19 +428,7 @@ function CreateEventForm({
     }
   }
 
-  // simple add player input handler — uses DOM input (not controlled here)
-  function handleAddPlayerFromInput(inputEl?: HTMLInputElement) {
-    const v = inputEl?.value?.trim();
-    if (!v) return;
-    const cur = watchedPlayers as string[];
-    if (cur.includes(v)) return;
-    if ((cur.length || 0) >= Number((watch("playerLimit") as any) || 4))
-      return alert("Player limit reached");
-    setValue("players", [...cur, v]);
-    if (inputEl) inputEl.value = "";
-  }
-
-  // debounce search for players
+  // Debounce search for players
   useEffect(() => {
     const q = playerSearch.trim();
     if (!q) {
@@ -351,12 +484,12 @@ function CreateEventForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium mb-1">Player limit</label>
           <Select
             onValueChange={(v) => setValue("playerLimit", Number(v))}
-            defaultValue={String(4)}
+            defaultValue={String(watch("playerLimit") || 4)}
           >
             <SelectTrigger>
               <SelectValue />
@@ -375,7 +508,7 @@ function CreateEventForm({
           <label className="block text-sm font-medium mb-1">Game type</label>
           <Select
             onValueChange={(v) => setValue("gameType", v)}
-            defaultValue={GAME_TYPES[0].value}
+            defaultValue={watch("gameType") || GAME_TYPES[0].value}
           >
             <SelectTrigger>
               <SelectValue />
@@ -390,20 +523,41 @@ function CreateEventForm({
           </Select>
         </div>
 
+        {watch("gameType") === "cricket" && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Total over</label>
+            <Select
+              onValueChange={(v) => setValue("totalOver", v)}
+              defaultValue={watch("totalOver") || "none"}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {TOTAL_OVERS.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div>
-          <label className="block text-sm font-medium mb-1">Total over</label>
+          <label className="block text-sm font-medium mb-1">Status</label>
           <Select
-            onValueChange={(v) => setValue("totalOver", v)}
-            defaultValue={"none"}
+            onValueChange={(v) => setValue("status", v)}
+            defaultValue={watch("status") || "upcoming"}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              {TOTAL_OVERS.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
+              {STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -411,9 +565,9 @@ function CreateEventForm({
         </div>
       </div>
 
-      <div className="col-span-2">
-        <label className="block text-sm font-medium mb-1">
-          Search / Add Players
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          Search & Add Players
         </label>
         <div className="flex gap-2 relative">
           <Input
@@ -423,65 +577,57 @@ function CreateEventForm({
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                handleAddPlayerFromInput(
-                  document.getElementById(
-                    "player-search-input",
-                  ) as HTMLInputElement,
-                );
               }
             }}
-            placeholder="Search players by name or email, or paste id"
+            placeholder="Search players by name or email..."
           />
-          <Button
-            type="button"
-            onClick={() =>
-              handleAddPlayerFromInput(
-                document.getElementById(
-                  "player-search-input",
-                ) as HTMLInputElement,
-              )
-            }
-            variant="outline"
-          >
-            Add
-          </Button>
-
           {searchResults.length > 0 && (
-            <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded mt-1 max-h-48 overflow-auto">
+            <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded mt-1 max-h-64 overflow-auto shadow-lg">
               {searchLoading ? (
-                <div className="p-2">Searching…</div>
+                <div className="p-3 text-center text-sm">Searching…</div>
               ) : (
                 searchResults.map((u) => (
                   <div
                     key={u._id}
-                    className="p-2 hover:bg-muted cursor-pointer flex justify-between items-center"
+                    className="p-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center border-b"
                   >
                     <div>
                       <div className="font-medium">
-                        {u.firstName || u.email}
+                        {u.firstName || u.username || u.email}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {u.email}
-                      </div>
+                      <div className="text-xs text-gray-500">{u.email}</div>
                     </div>
-                    <div>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const limit = Number(
-                            (watch("playerLimit") as any) || 4,
-                          );
-                          if ((watchedPlayers || []).length >= limit)
-                            return alert(`Player limit reached (${limit})`);
-                          if (watchedPlayers.includes(u._id)) return;
-                          setValue("players", [...watchedPlayers, u._id]);
-                          setPlayerSearch("");
-                          setSearchResults([]);
-                        }}
-                      >
-                        Add
-                      </Button>
-                    </div>
+                    <Button
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        const limit = Number(watch("playerLimit") || 4);
+                        if ((watchedPlayers || []).length >= limit) {
+                          alert(`Player limit reached (${limit})`);
+                          return;
+                        }
+                        if (
+                          watchedPlayers.some(
+                            (p: any) => p.id === u._id || p.id === u.id,
+                          )
+                        ) {
+                          alert("Player already added");
+                          return;
+                        }
+                        setValue("players", [
+                          ...watchedPlayers,
+                          {
+                            id: u._id || u.id,
+                            username: u.username || u.firstName || u.email,
+                            email: u.email,
+                          },
+                        ]);
+                        setPlayerSearch("");
+                        setSearchResults([]);
+                      }}
+                    >
+                      Add
+                    </Button>
                   </div>
                 ))
               )}
@@ -489,24 +635,29 @@ function CreateEventForm({
           )}
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-2">
-          {watchedPlayers.map((p: string) => (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {watchedPlayers.map((p: any) => (
             <div
-              key={p}
-              className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm"
+              key={p.id}
+              className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm"
             >
-              <span>{p}</span>
+              <div>
+                <div className="font-medium text-blue-900">
+                  {p.username || p.email}
+                </div>
+                <div className="text-xs text-blue-700">{p.email}</div>
+              </div>
               <button
                 type="button"
                 onClick={() =>
                   setValue(
                     "players",
-                    watchedPlayers.filter((x: string) => x !== p),
+                    watchedPlayers.filter((x: any) => x.id !== p.id),
                   )
                 }
-                className="text-xs text-red-600"
+                className="text-blue-600 hover:text-blue-900 font-bold"
               >
-                x
+                ✕
               </button>
             </div>
           ))}
@@ -520,7 +671,7 @@ function CreateEventForm({
           </label>
           <Select
             onValueChange={(v) => setValue("bannerId", v)}
-            defaultValue={"none"}
+            defaultValue={watch("bannerId") || "none"}
           >
             <SelectTrigger>
               <SelectValue />
@@ -528,7 +679,9 @@ function CreateEventForm({
             <SelectContent>
               <SelectItem value="none">None</SelectItem>
               {banners.map((b) => (
-                <SelectItem value={b.id}>{b.title || b.id}</SelectItem>
+                <SelectItem key={b.id} value={b.id}>
+                  {b.title || b.id}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -536,16 +689,25 @@ function CreateEventForm({
 
         <div>
           <label className="block text-sm font-medium mb-1">Time zone</label>
-          <Input list="tz-list" {...register("timeZone")} />
-          <datalist id="tz-list">
-            {TIMEZONES.map((tz) => (
-              <option key={tz} value={tz} />
-            ))}
-          </datalist>
+          <Select
+            onValueChange={(v) => setValue("timeZone", v)}
+            defaultValue={watch("timeZone") || TIMEZONES[0]}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEZONES.map((tz) => (
+                <SelectItem key={tz} value={tz}>
+                  {tz}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2 pt-4">
         <Button
           type="button"
           variant="ghost"
@@ -557,7 +719,11 @@ function CreateEventForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : initial ? "Update" : "Create"}
+          {isSubmitting
+            ? "Saving..."
+            : initial
+              ? "Update Event"
+              : "Create Event"}
         </Button>
       </div>
     </form>
