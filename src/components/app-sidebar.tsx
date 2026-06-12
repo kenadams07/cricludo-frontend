@@ -61,6 +61,12 @@ const data = {
       icon: IconTrophy,
       hideUser: ["agent", "master"],
     },
+    {
+      title: "Events",
+      url: "/events",
+      icon: IconTrophy,
+      hideUser: ["agent", "master"],
+    },
   ],
   navClouds: [],
   navSecondary: [],
