@@ -67,6 +67,7 @@ import {
   updateTeamDetails,
   UpdateTeamPayload,
   uploadTeamFlag,
+  deleteTeam,
   useCreateTeam,
   useTeams,
 } from "@/hooks/useTeams";
@@ -180,6 +181,19 @@ export default function TeamsPage() {
     const updatedTeam = await uploadTeamFlag(teamId, file);
     await replaceTeamInCache(updatedTeam);
     return updatedTeam;
+  };
+
+  const handleDeleteTeam = async (teamId: string) => {
+    try {
+      await deleteTeam(teamId);
+      await mutateTeams();
+      closeTeamManager();
+      toast.success("Team deleted successfully.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete team.";
+      toast.error(message);
+    }
   };
 
   const handleReorderPlayers = async (
@@ -388,6 +402,7 @@ export default function TeamsPage() {
               onUpdatePlayer={handleUpdatePlayer}
               onUpdateTeam={handleUpdateTeamDetails}
               onUploadFlag={handleUploadFlag}
+              onDelete={handleDeleteTeam}
             />
           )}
         </SheetContent>
@@ -445,6 +460,7 @@ function TeamManager({
   onUpdatePlayer,
   onUpdateTeam,
   onUploadFlag,
+  onDelete,
 }: {
   team: Team;
   teams: Team[];
@@ -459,6 +475,7 @@ function TeamManager({
     updates: UpdateTeamPayload,
   ) => Promise<Team | null>;
   onUploadFlag: (teamId: string, file: File) => Promise<Team | null>;
+  onDelete: (teamId: string) => Promise<void>;
 }) {
   const alternateCandidates = useMemo(
     () =>
@@ -495,6 +512,8 @@ function TeamManager({
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isUploadingFlag, setIsUploadingFlag] = useState(false);
   const [isRemovingFlag, setIsRemovingFlag] = useState(false);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     setPlayers(formatPlayers(team.players));
@@ -599,6 +618,20 @@ function TeamManager({
       toast.error(message);
     } finally {
       setIsRemovingFlag(false);
+    }
+  };
+
+  const handleDeleteTeamClick = async () => {
+    try {
+      setIsDeletingTeam(true);
+      await onDelete(team._id);
+      setShowDeleteConfirm(false);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete team.";
+      toast.error(message);
+    } finally {
+      setIsDeletingTeam(false);
     }
   };
 
@@ -776,21 +809,64 @@ function TeamManager({
                 />
               </div>
             </div>
-            <Button
-              onClick={handleSaveDetails}
-              disabled={
-                !hasDetailsChanges ||
-                isSavingDetails ||
-                (hasNameChanged && !trimmedTeamName)
-              }
-            >
-              {isSavingDetails ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              Save details
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveDetails}
+                disabled={
+                  !hasDetailsChanges ||
+                  isSavingDetails ||
+                  (hasNameChanged && !trimmedTeamName)
+                }
+              >
+                {isSavingDetails ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save details
+              </Button>
+              <Dialog
+                open={showDeleteConfirm}
+                onOpenChange={setShowDeleteConfirm}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Team
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Delete Team?</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground">
+                    Are you sure you want to delete <strong>{team.name}</strong>
+                    ? This action cannot be undone.
+                  </p>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeletingTeam}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleDeleteTeamClick}
+                      disabled={isDeletingTeam}
+                    >
+                      {isDeletingTeam && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {isDeletingTeam ? "Deleting..." : "Delete"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-3">
